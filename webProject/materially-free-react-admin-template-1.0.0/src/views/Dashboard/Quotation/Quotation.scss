@@ -1,0 +1,96 @@
+// src/components/Quotation/Quotation.scss
+.quotation {
+  &-header {
+    background: linear-gradient(135deg, $primary 0%, $primaryDark 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+
+  &-section {
+    margin-bottom: 32px;
+    
+    &-title {
+      font-weight: 600;
+      color: $textPrimary;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid $primary;
+    }
+  }
+
+  &-table {
+    .MuiTableHead-root {
+      background-color: $primaryLight;
+      
+      .MuiTableCell-head {
+        font-weight: 600;
+        color: $textDark;
+        background-color: $primaryLight;
+      }
+    }
+    
+    .MuiTableCell-body {
+      padding: 12px 16px;
+    }
+  }
+
+  &-total-section {
+    background-color: $bg100;
+    border: 1px solid $secondaryLight;
+    border-radius: 8px;
+    padding: 24px;
+    
+    .total-item {
+      text-align: center;
+      padding: 16px;
+      
+      .total-label {
+        font-size: 0.875rem;
+        color: $textSecondary;
+        margin-bottom: 8px;
+      }
+      
+      .total-value {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: $primaryDark;
+      }
+    }
+  }
+
+  &-note {
+    background-color: $warningLight;
+    border-left: 4px solid $warning;
+    padding: 16px;
+    border-radius: 4px;
+    
+    .note-text {
+      font-size: 0.875rem;
+      color: $textDark;
+      margin: 0;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .quotation {
+    &-table {
+      .MuiTableContainer-root {
+        overflow-x: auto;
+      }
+    }
+    
+    &-total-section {
+      .total-item {
+        padding: 12px 8px;
+        
+        .total-value {
+          font-size: 1.125rem;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,78 @@
+@import 'react-perfect-scrollbar/dist/css/styles.css';
+:export {
+  primary: #3366ff;
+  primaryDark: #0043a9;
+  primaryLight: #3380f4;
+  primary100: #4c6fff;
+  secondary: #425466;
+  secondaryDark: #272f33;
+  secondaryDark: #272f33;
+  error: #ff413a;
+  errorDark: #a20e00;
+  errorLight: #ec4333;
+  warning: #f4a100;
+  warningDark: #aa7000;
+  warningLight: #f6b333;
+  info: #00cfd5;
+  infoDark: #009095;
+  infoLight: #33d8dd;
+  success: #00ac69;
+  successDark: #007849;
+  successLight: #33bc87;
+  grey300: #425466;
+  bg100: #f8f8f9;
+  textPrimary: #242c3a;
+  textSecondary: #1b212c;
+  textDark: #12171e;
+  textHint: rgba(0, 0, 0, 0.3803921569);
+  textDarkPrimary: #bbc0c7;
+  textDarkSecondary: #babfc9;
+  textDarkDark: #fff;
+  textDarkHint: rgba(148, 145, 145, 0.3803921569);
+  background: #f0f2f8;
+  backgoundDark: #181e2b;
+  paper: #ffffff;
+  paperDark: #232b38;
+  menuHover: #e3f2fd;
+}
+
+/* breadcrumb */
+.icon-breadcrumb {
+  margin-right: 5px;
+}
+
+.link-breadcrumb {
+  font-size: 0.75rem;
+  display: flex;
+  text-decoration: none;
+}
+
+/* card */
+.card-header {
+  font-weight: 600 !important;
+  font-size: 15px;
+}
+
+.apexcharts-legend-marker {
+  margin-right: 8px !important;
+}
+
+.f-right {
+  float: right;
+}
+
+.p-0 {
+  padding: 0 !important;
+}
+
+.p-20 {
+  padding: 20px !important;
+}
+
+.apexcharts-legend-text {
+  padding-right: 4px;
+}
+
+.css-7blk3r-MuiButtonBase-root-MuiButton-root {
+  color: #fff !important;
+}/*# sourceMappingURL=style.css.map */
