@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "t4ncj5GsoqhNdZVFeCJdJsCAMLgJgjTyy8VNEcW+zMU=",
+  "Source": "BackendWeightReader",
+  "BasePath": "_content/BackendWeightReader",
+  "Mode": "Default",
+  "ManifestType": "Publish",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
