@@ -39,11 +39,11 @@ namespace Backend.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal rate_per_night { get; set; }
 
-        public DateTime created_at { get; set; } = DateTime.Now;
+        // public DateTime created_at { get; set; } = DateTime.Now;
 
-        public int createdBy { get; set; } = 1;
+        // public int createdBy { get; set; } = 1;
 
-        public int? ModifyBy { get; set; }
+        // public int? ModifyBy { get; set; }
 
         // Navigation properties
         [ForeignKey("quotation_id")]

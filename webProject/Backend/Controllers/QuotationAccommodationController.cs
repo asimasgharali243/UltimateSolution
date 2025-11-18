@@ -131,9 +131,9 @@ namespace Backend.Controllers
 
             // Set audit fields
             var currentUserId = GetCurrentUserId();
-            quotationAccommodation.created_at = DateTime.Now;
-            quotationAccommodation.createdBy = currentUserId;
-            quotationAccommodation.ModifyBy = null;
+            // quotationAccommodation.created_at = DateTime.Now;
+            // quotationAccommodation.createdBy = currentUserId;
+            // quotationAccommodation.ModifyBy = null;
 
             _context.QuotationAccommodations.Add(quotationAccommodation);
             await _context.SaveChangesAsync();
@@ -220,7 +220,7 @@ namespace Backend.Controllers
             existingAccommodation.rate_per_night = quotationAccommodation.rate_per_night;
 
             // Update audit field
-            existingAccommodation.ModifyBy = GetCurrentUserId();
+            // existingAccommodation.ModifyBy = GetCurrentUserId();
 
             try
             {

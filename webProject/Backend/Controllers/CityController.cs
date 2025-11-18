@@ -21,12 +21,35 @@ namespace Backend.Controllers
 
         // GET: api/City
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<City>>> GetCities()
+        public async Task<ActionResult<IEnumerable<object>>> GetCities()
         {
             try
             {
                 var cities = await _context.Cities
+                    .Include(c => c.CreatedByUser) // Include CreatedBy user details
+                    .Include(c => c.ModifiedByUser) // Include ModifyBy user details
                     .OrderBy(c => c.cityName)
+                    .Select(c => new
+                    {
+                        c.cityID,
+                        c.cityName,
+                        c.CreatedBy,
+                        c.CreatedDT,
+                        c.ModifyBy,
+                        c.ModifyDT,
+                        CreatedByUser = c.CreatedByUser != null ? new 
+                        { 
+                            c.CreatedByUser.UserID,
+                            c.CreatedByUser.UserFullName,
+                            c.CreatedByUser.UserName
+                        } : null,
+                        ModifiedByUser = c.ModifiedByUser != null ? new 
+                        { 
+                            c.ModifiedByUser.UserID,
+                            c.ModifiedByUser.UserFullName,
+                            c.ModifiedByUser.UserName
+                        } : null
+                    })
                     .ToListAsync();
                 return Ok(cities);
             }
@@ -38,11 +61,36 @@ namespace Backend.Controllers
 
         // GET: api/City/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<City>> GetCity(int id)
+        public async Task<ActionResult<object>> GetCity(int id)
         {
             try
             {
-                var city = await _context.Cities.FindAsync(id);
+                var city = await _context.Cities
+                    .Include(c => c.CreatedByUser)
+                    .Include(c => c.ModifiedByUser)
+                    .Where(c => c.cityID == id)
+                    .Select(c => new
+                    {
+                        c.cityID,
+                        c.cityName,
+                        c.CreatedBy,
+                        c.CreatedDT,
+                        c.ModifyBy,
+                        c.ModifyDT,
+                        CreatedByUser = c.CreatedByUser != null ? new 
+                        { 
+                            c.CreatedByUser.UserID,
+                            c.CreatedByUser.UserFullName,
+                            c.CreatedByUser.UserName
+                        } : null,
+                        ModifiedByUser = c.ModifiedByUser != null ? new 
+                        { 
+                            c.ModifiedByUser.UserID,
+                            c.ModifiedByUser.UserFullName,
+                            c.ModifiedByUser.UserName
+                        } : null
+                    })
+                    .FirstOrDefaultAsync();
 
                 if (city == null)
                 {
@@ -139,7 +187,35 @@ namespace Backend.Controllers
                 _context.Cities.Add(city);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetCity), new { id = city.cityID }, city);
+                // Reload the city with user details
+                var createdCity = await _context.Cities
+                    .Include(c => c.CreatedByUser)
+                    .Include(c => c.ModifiedByUser)
+                    .Where(c => c.cityID == city.cityID)
+                    .Select(c => new
+                    {
+                        c.cityID,
+                        c.cityName,
+                        c.CreatedBy,
+                        c.CreatedDT,
+                        c.ModifyBy,
+                        c.ModifyDT,
+                        CreatedByUser = c.CreatedByUser != null ? new 
+                        { 
+                            c.CreatedByUser.UserID,
+                            c.CreatedByUser.UserFullName,
+                            c.CreatedByUser.UserName
+                        } : null,
+                        ModifiedByUser = c.ModifiedByUser != null ? new 
+                        { 
+                            c.ModifiedByUser.UserID,
+                            c.ModifiedByUser.UserFullName,
+                            c.ModifiedByUser.UserName
+                        } : null
+                    })
+                    .FirstOrDefaultAsync();
+
+                return CreatedAtAction(nameof(GetCity), new { id = city.cityID }, createdCity);
             }
             catch (Exception ex)
             {

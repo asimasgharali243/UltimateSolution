@@ -14,5 +14,8 @@ namespace Backend.Models
 
         [StringLength(50)]
         public string? formDisplayName { get; set; }
+          // Add these missing properties
+    public string Menu { get; set; }
+    public int sortOrder { get; set; }
     }
 }

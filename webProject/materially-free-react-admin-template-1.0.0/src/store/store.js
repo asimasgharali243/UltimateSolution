@@ -14,8 +14,18 @@ import { masterApi } from './api/masterApi';
 import { clientApi } from './api/clientApi';
 import { queryFormApi } from './api/queryFormApi';
 import { userRightsApi } from './api/userRightsApi';
-import {advertisementApi} from './api/advertisementApi'
+import {advertisementApi} from './api/advertisementApi';
+import {accountApi} from './api/accountApi';
+import {itemGroupApi} from './api/itemGroupApi';
+import {itemCategoryApi} from './api/itemCategoryApi';
+
+import { itemApi } from './api/itemApi';
+import { itemUnitApi } from './api/itemUnitApi';
+import { level4Api } from './api/level4Api';
+import { purchaseApi } from './api/purchaseApi';
+
 export const store = configureStore({
+
   reducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -34,7 +44,14 @@ export const store = configureStore({
       clientApi.middleware,
       queryFormApi.middleware,
       userRightsApi.middleware,
-      advertisementApi.middleware
+      advertisementApi.middleware,
+      accountApi.middleware,
+      itemGroupApi.middleware,
+      itemCategoryApi.middleware,
+      itemApi.middleware,
+      itemUnitApi.middleware,
+      level4Api.middleware,
+      purchaseApi.middleware,
     ),
   devTools: import.meta.env.MODE !== 'production',
 });

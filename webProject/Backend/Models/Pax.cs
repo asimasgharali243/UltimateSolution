@@ -18,5 +18,12 @@ namespace Backend.Models
         public DateTime? CreatedDT { get; set; }
         public int? ModifyBy { get; set; }
         public DateTime? ModifyDT { get; set; }
+
+        // Navigation properties
+        [ForeignKey("CreatedBy")]
+        public virtual User? CreatedByUser { get; set; }
+
+        [ForeignKey("ModifyBy")]
+        public virtual User? ModifiedByUser { get; set; }
     }
 }

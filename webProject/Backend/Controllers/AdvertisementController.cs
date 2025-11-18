@@ -1,3 +1,4 @@
+// Backend/Controllers/AdvertisementController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
@@ -27,7 +28,9 @@ namespace Backend.Controllers
             try
             {
                 var masters = await _context.Masters
-                    .Include(m => m.Client)
+                    .Include(m => m.Account)
+                    .Include(m => m.CreatedByUser)
+                    .Include(m => m.ModifiedByUser)
                     .Include(m => m.Details)
                     .OrderByDescending(m => m.billDate)
                     .ThenByDescending(m => m.masterID)
@@ -48,7 +51,9 @@ namespace Backend.Controllers
             try
             {
                 var master = await _context.Masters
-                    .Include(m => m.Client)
+                    .Include(m => m.Account)
+                    .Include(m => m.CreatedByUser)
+                    .Include(m => m.ModifiedByUser)
                     .Include(m => m.Details)
                     .FirstOrDefaultAsync(m => m.masterID == id);
 
@@ -84,7 +89,7 @@ namespace Backend.Controllers
                     roNo = masterDto.roNo,
                     roDate = masterDto.roDate,
                     Notes = masterDto.Notes,
-                    clientID = masterDto.clientID,
+                    accountID = masterDto.accountID,
                     agencyName = masterDto.agencyName,
                     pID = masterDto.pID,
                     caption = masterDto.caption,
@@ -112,7 +117,9 @@ namespace Backend.Controllers
                 await _context.SaveChangesAsync();
 
                 var createdMaster = await _context.Masters
-                    .Include(m => m.Client)
+                    .Include(m => m.Account)
+                    .Include(m => m.CreatedByUser)
+                    .Include(m => m.ModifiedByUser)
                     .Include(m => m.Details)
                     .FirstOrDefaultAsync(m => m.masterID == master.masterID);
 
@@ -152,7 +159,7 @@ namespace Backend.Controllers
                 master.roNo = masterDto.roNo;
                 master.roDate = masterDto.roDate;
                 master.Notes = masterDto.Notes;
-                master.clientID = masterDto.clientID;
+                master.accountID = masterDto.accountID;
                 master.agencyName = masterDto.agencyName;
                 master.pID = masterDto.pID;
                 master.caption = masterDto.caption;
@@ -180,7 +187,9 @@ namespace Backend.Controllers
                 await _context.SaveChangesAsync();
 
                 var updatedMaster = await _context.Masters
-                    .Include(m => m.Client)
+                    .Include(m => m.Account)
+                    .Include(m => m.CreatedByUser)
+                    .Include(m => m.ModifiedByUser)
                     .Include(m => m.Details)
                     .FirstOrDefaultAsync(m => m.masterID == id);
 
@@ -236,65 +245,81 @@ namespace Backend.Controllers
             }
         }
 
-        [HttpGet("clients")]
-        public async Task<ActionResult<ApiResponse<List<ClientResponseDto>>>> GetClients()
+        [HttpGet("accounts")]
+        public async Task<ActionResult<ApiResponse<List<AccountResponseDto>>>> GetAccounts()
         {
             try
             {
-                var clients = await _context.Clients
-                    .OrderBy(c => c.FullName)
+                var accounts = await _context.Accounts
+                    .OrderBy(a => a.accountTitle)
                     .ToListAsync();
 
-                var clientDtos = clients.Select(c => new ClientResponseDto
+                var accountDtos = accounts.Select(a => new AccountResponseDto
                 {
-                    Id = c.Id,
-                    FullName = c.FullName,
-                    ContactNumber = c.ContactNumber,
-                    WhatsAppNumber = c.WhatsAppNumber,
-                    GroupHeadName = c.GroupHeadName,
-                    GroupHeadNumber = c.GroupHeadNumber,
-                    CityOfResidence = c.CityOfResidence,
-                    PassportValidity = c.PassportValidity,
-                    SpecialRequirements = c.SpecialRequirements
+                    accountID = a.accountID,
+                    accountType = a.accountType,
+                    accountTitle = a.accountTitle,
+                    city = a.city,
+                    address = a.address,
+                    contactPersonName = a.contactPersonName,
+                    contactPersonMobile = a.contactPersonMobile,
+                    contactPersonWhatsapp = a.contactPersonWhatsapp,
+                    contactPersonEmail = a.contactPersonEmail,
+                    creditLimit = a.creditLimit,
+                    creditDays = a.creditDays,
+                    cnic = a.cnic,
+                    ntn = a.ntn,
+                    stn = a.stn,
+                    openingBalance = a.openingBalance,
+                    openingBalanceDate = a.openingBalanceDate
                 }).ToList();
 
-                return Ok(ApiResponse<List<ClientResponseDto>>.SuccessResult(clientDtos));
+                return Ok(ApiResponse<List<AccountResponseDto>>.SuccessResult(accountDtos));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse<List<ClientResponseDto>>.ErrorResult(ex.Message));
+                return BadRequest(ApiResponse<List<AccountResponseDto>>.ErrorResult(ex.Message));
             }
         }
 
-        [HttpGet("clients/search")]
-        public async Task<ActionResult<ApiResponse<List<ClientResponseDto>>>> SearchClients([FromQuery] string term)
+        [HttpGet("accounts/search")]
+        public async Task<ActionResult<ApiResponse<List<AccountResponseDto>>>> SearchAccounts([FromQuery] string term)
         {
             try
             {
-                var clients = await _context.Clients
-                    .Where(c => c.FullName!.Contains(term) || c.ContactNumber!.Contains(term))
-                    .OrderBy(c => c.FullName)
+                var accounts = await _context.Accounts
+                    .Where(a => a.accountTitle!.Contains(term) || 
+                               a.contactPersonMobile!.Contains(term) || 
+                               a.contactPersonName!.Contains(term))
+                    .OrderBy(a => a.accountTitle)
                     .Take(10)
                     .ToListAsync();
 
-                var clientDtos = clients.Select(c => new ClientResponseDto
+                var accountDtos = accounts.Select(a => new AccountResponseDto
                 {
-                    Id = c.Id,
-                    FullName = c.FullName,
-                    ContactNumber = c.ContactNumber,
-                    WhatsAppNumber = c.WhatsAppNumber,
-                    GroupHeadName = c.GroupHeadName,
-                    GroupHeadNumber = c.GroupHeadNumber,
-                    CityOfResidence = c.CityOfResidence,
-                    PassportValidity = c.PassportValidity,
-                    SpecialRequirements = c.SpecialRequirements
+                    accountID = a.accountID,
+                    accountType = a.accountType,
+                    accountTitle = a.accountTitle,
+                    city = a.city,
+                    address = a.address,
+                    contactPersonName = a.contactPersonName,
+                    contactPersonMobile = a.contactPersonMobile,
+                    contactPersonWhatsapp = a.contactPersonWhatsapp,
+                    contactPersonEmail = a.contactPersonEmail,
+                    creditLimit = a.creditLimit,
+                    creditDays = a.creditDays,
+                    cnic = a.cnic,
+                    ntn = a.ntn,
+                    stn = a.stn,
+                    openingBalance = a.openingBalance,
+                    openingBalanceDate = a.openingBalanceDate
                 }).ToList();
 
-                return Ok(ApiResponse<List<ClientResponseDto>>.SuccessResult(clientDtos));
+                return Ok(ApiResponse<List<AccountResponseDto>>.SuccessResult(accountDtos));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse<List<ClientResponseDto>>.ErrorResult(ex.Message));
+                return BadRequest(ApiResponse<List<AccountResponseDto>>.ErrorResult(ex.Message));
             }
         }
 
@@ -302,7 +327,6 @@ namespace Backend.Controllers
         {
             // Calculate advertisement amount from details
             var advertisementAmount = master.Details.Sum(d => {
-                // Extract numeric value from totalSpace (e.g., "20cm" -> 20)
                 var spaceValue = 0;
                 if (int.TryParse(System.Text.RegularExpressions.Regex.Match(d.totalSpace ?? "", @"\d+").Value, out int result))
                 {
@@ -311,11 +335,9 @@ namespace Backend.Controllers
                 return d.rate * spaceValue;
             });
 
-            // Calculate extras (percentage of advertisement amount for each extra)
             var frontPageExtraAmount = (advertisementAmount * master.frontPageExtra) / 100;
             var backPageExtraAmount = (advertisementAmount * master.backPageExtra) / 100;
             var extrasAmount = frontPageExtraAmount + backPageExtraAmount;
-
             var grossTotal = advertisementAmount + extrasAmount;
             var netAmount = grossTotal - master.comission;
 
@@ -328,7 +350,7 @@ namespace Backend.Controllers
                 roNo = master.roNo,
                 roDate = master.roDate,
                 Notes = master.Notes,
-                clientID = master.clientID,
+                accountID = master.accountID,
                 agencyName = master.agencyName,
                 pID = master.pID,
                 caption = master.caption,
@@ -337,8 +359,13 @@ namespace Backend.Controllers
                 comission = master.comission,
                 createdDT = master.createdDT,
                 modifyDT = master.modifyDT,
-                ClientName = master.Client?.FullName,
-                ClientContactNumber = master.Client?.ContactNumber,
+                
+                // Account details
+                AccountTitle = master.Account?.accountTitle,
+                AccountContactPerson = master.Account?.contactPersonName,
+                AccountContactMobile = master.Account?.contactPersonMobile,
+                AccountCity = master.Account?.city,
+                
                 Details = master.Details.Select(d => new DetailResponseDto
                 {
                     id = d.id,
@@ -358,7 +385,6 @@ namespace Backend.Controllers
         }
     }
 
-    // Common Response Model - Move this to a separate file if needed
     public class ApiResponse<T>
     {
         public bool Success { get; set; }

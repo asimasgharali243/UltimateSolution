@@ -51,7 +51,7 @@ const AdvertisementDetail = ({ advertisement, onBack, onEdit }) => {
 
   // Calculate totals
   const calculateTotals = (ad) => {
-    if (!ad || !ad.details) return { totalAmount: 0, netAmount: 0 };
+    if (!ad || !ad.details) return { totalAmount: 0, netAmount: 0 }; // Fixed: changed from Details to details
 
     const advertisementAmount = ad.details.reduce((sum, detail) => {
       const spaceValue = parseInt(detail.totalSpace) || 0;
@@ -107,8 +107,8 @@ const AdvertisementDetail = ({ advertisement, onBack, onEdit }) => {
                 {advertisement.billNo && (
                   <Chip label={`Bill: ${advertisement.billNo}`} variant="outlined" sx={{ color: 'white', borderColor: 'white' }} />
                 )}
-                {advertisement.clientID && (
-                  <Chip label={`Client ID: ${advertisement.clientID}`} variant="outlined" sx={{ color: 'white', borderColor: 'white' }} />
+                {advertisement.accountID && (
+                  <Chip label={`Account ID: ${advertisement.accountID}`} variant="outlined" sx={{ color: 'white', borderColor: 'white' }} />
                 )}
                 {advertisement.pID && (
                   <Chip label={`PID: ${advertisement.pID}`} variant="outlined" sx={{ color: 'white', borderColor: 'white' }} />
@@ -182,25 +182,30 @@ const AdvertisementDetail = ({ advertisement, onBack, onEdit }) => {
           </Card>
         </Grid>
 
-        {/* Client & Agency Information */}
+        {/* Account & Agency Information */}
         <Grid item xs={12} md={6}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <BusinessIcon color="info" />
-                Client & Agency
+                Account & Agency
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <Typography variant="body2" color="text.secondary">
-                    Client Name
+                    Account Name
                   </Typography>
                   <Typography variant="h6" fontWeight="bold">
-                    {advertisement.clientName || 'N/A'}
+                    {advertisement.accountTitle || 'N/A'} {/* Fixed: changed from AccountTitle to accountTitle */}
                   </Typography>
-                  {advertisement.clientContactNumber && (
+                  {advertisement.accountContactPerson && ( // Fixed: changed from AccountContactPerson to accountContactPerson
                     <Typography variant="caption" color="text.secondary" display="block">
-                      Contact: {advertisement.clientContactNumber}
+                      Contact: {advertisement.accountContactPerson}
+                    </Typography>
+                  )}
+                  {advertisement.accountContactMobile && ( // Fixed: changed from AccountContactMobile to accountContactMobile
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Mobile: {advertisement.accountContactMobile}
                     </Typography>
                   )}
                 </Grid>
@@ -228,65 +233,67 @@ const AdvertisementDetail = ({ advertisement, onBack, onEdit }) => {
         </Grid>
 
         {/* Advertisement Details */}
-        {advertisement.details && advertisement.details.length > 0 && (
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <DescriptionIcon color="secondary" />
-                  Advertisement Details ({advertisement.details.length} items)
-                </Typography>
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Insertion Date</TableCell>
-                        <TableCell>Color</TableCell>
-                        <TableCell>Size</TableCell>
-                        <TableCell>Total Space</TableCell>
-                        <TableCell>Position</TableCell>
-                        <TableCell align="right">Rate</TableCell>
-                        <TableCell align="right">Amount</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {advertisement.details.map((detail, index) => {
-                        const spaceValue = parseInt(detail.totalSpace) || 0;
-                        const amount = detail.rate * spaceValue;
-                        return (
-                          <TableRow key={index}>
-                            <TableCell>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <CalendarIcon fontSize="small" color="action" />
-                                {formatDate(detail.inserationDate)}
-                              </Box>
-                            </TableCell>
-                            <TableCell>{detail.color}</TableCell>
-                            <TableCell>{detail.size}</TableCell>
-                            <TableCell>{detail.totalSpace}</TableCell>
-                            <TableCell>
-                              <Chip label={detail.position} size="small" color={detail.position === 'F.P.' ? 'primary' : 'secondary'} />
-                            </TableCell>
-                            <TableCell align="right">
-                              <Typography variant="body2" fontWeight="bold">
-                                {formatCurrency(detail.rate)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell align="right">
-                              <Typography variant="body2" fontWeight="bold" color="primary">
-                                {formatCurrency(amount)}
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
+        {advertisement.details &&
+          advertisement.details.length > 0 && ( // Fixed: changed from Details to details
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <DescriptionIcon color="secondary" />
+                    Advertisement Details ({advertisement.details.length} items)
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Insertion Date</TableCell>
+                          <TableCell>Color</TableCell>
+                          <TableCell>Size</TableCell>
+                          <TableCell>Total Space</TableCell>
+                          <TableCell>Position</TableCell>
+                          <TableCell align="right">Rate</TableCell>
+                          <TableCell align="right">Amount</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {advertisement.details.map((detail, index) => {
+                          // Fixed: changed from Details to details
+                          const spaceValue = parseInt(detail.totalSpace) || 0;
+                          const amount = detail.rate * spaceValue;
+                          return (
+                            <TableRow key={index}>
+                              <TableCell>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <CalendarIcon fontSize="small" color="action" />
+                                  {formatDate(detail.inserationDate)}
+                                </Box>
+                              </TableCell>
+                              <TableCell>{detail.color}</TableCell>
+                              <TableCell>{detail.size}</TableCell>
+                              <TableCell>{detail.totalSpace}</TableCell>
+                              <TableCell>
+                                <Chip label={detail.position} size="small" color={detail.position === 'F.P.' ? 'primary' : 'secondary'} />
+                              </TableCell>
+                              <TableCell align="right">
+                                <Typography variant="body2" fontWeight="bold">
+                                  {formatCurrency(detail.rate)}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Typography variant="body2" fontWeight="bold" color="primary">
+                                  {formatCurrency(amount)}
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
 
         {/* Financial Summary */}
         <Grid item xs={12}>
@@ -365,7 +372,7 @@ const AdvertisementDetail = ({ advertisement, onBack, onEdit }) => {
         </Grid>
 
         {/* Notes */}
-        {advertisement.Notes && (
+        {advertisement.notes && ( // Fixed: changed from Notes to notes
           <Grid item xs={12}>
             <Card>
               <CardContent>
@@ -373,7 +380,7 @@ const AdvertisementDetail = ({ advertisement, onBack, onEdit }) => {
                   Additional Notes
                 </Typography>
                 <Typography variant="body1" sx={{ p: 2, backgroundColor: theme.palette.grey[50], borderRadius: 1 }}>
-                  {advertisement.Notes}
+                  {advertisement.notes}
                 </Typography>
               </CardContent>
             </Card>

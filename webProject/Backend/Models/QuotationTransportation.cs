@@ -31,7 +31,7 @@ namespace Backend.Models
         [Required]
         public int quantity { get; set; }
 
-        public DateTime created_at { get; set; } = DateTime.Now;
+    
 
         // Navigation properties
         [ForeignKey("quotation_id")]

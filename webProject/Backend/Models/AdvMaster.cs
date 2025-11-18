@@ -1,3 +1,4 @@
+// Backend/Models/Master.cs
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -35,8 +36,8 @@ namespace Backend.Models
         [Column("Notes")]
         public string? Notes { get; set; }
 
-        [Column("clientID")]
-        public int? clientID { get; set; }
+        [Column("accountID")]
+        public int? accountID { get; set; }
 
         [StringLength(250)]
         [Column("agencyName")]
@@ -75,7 +76,15 @@ namespace Backend.Models
         public DateTime? modifyDT { get; set; }
 
         // Navigation properties
-        public virtual Client? Client { get; set; }
+        [ForeignKey("accountID")]
+        public virtual Account? Account { get; set; }
+        
+        [ForeignKey("createdBy")]
+        public virtual User? CreatedByUser { get; set; }
+        
+        [ForeignKey("modifyBy")]
+        public virtual User? ModifiedByUser { get; set; }
+
         public virtual ICollection<Detail> Details { get; set; } = new List<Detail>();
     }
 
@@ -114,7 +123,6 @@ namespace Backend.Models
         [Column("rate")]
         public int rate { get; set; }
 
-        // Navigation property
         [ForeignKey("masterID")]
         public virtual Master Master { get; set; } = null!;
     }

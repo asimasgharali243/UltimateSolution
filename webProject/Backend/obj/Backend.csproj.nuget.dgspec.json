@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Utimate Solution\\webProject\\Backend\\Backend.csproj": {}
+    "C:\\Utimate Solution\\UltimateSolution\\webProject\\Backend\\Backend.csproj": {}
   },
   "projects": {
-    "C:\\Utimate Solution\\webProject\\Backend\\Backend.csproj": {
+    "C:\\Utimate Solution\\UltimateSolution\\webProject\\Backend\\Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Utimate Solution\\webProject\\Backend\\Backend.csproj",
+        "projectUniqueName": "C:\\Utimate Solution\\UltimateSolution\\webProject\\Backend\\Backend.csproj",
         "projectName": "Backend",
-        "projectPath": "C:\\Utimate Solution\\webProject\\Backend\\Backend.csproj",
+        "projectPath": "C:\\Utimate Solution\\UltimateSolution\\webProject\\Backend\\Backend.csproj",
         "packagesPath": "C:\\Users\\World\\.nuget\\packages\\",
-        "outputPath": "C:\\Utimate Solution\\webProject\\Backend\\obj\\",
+        "outputPath": "C:\\Utimate Solution\\UltimateSolution\\webProject\\Backend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\World\\AppData\\Roaming\\NuGet\\NuGet.Config"

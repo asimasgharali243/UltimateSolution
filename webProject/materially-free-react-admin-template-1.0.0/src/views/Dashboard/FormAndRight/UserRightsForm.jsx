@@ -196,26 +196,26 @@ const UserRightsForm = () => {
         UserID: parseInt(selectedUser),
         FormID: right.FormID,
         // Use camelCase for API
-        canView: right.CanView || false,
-        canSave: right.CanSave || false,
-        canUpdate: right.CanUpdate || false,
-        canDelete: right.CanDelete || false,
-        canPost: right.CanPost || false
+        CanView: right.CanView || false,
+        CanSave: right.CanSave || false,
+        CanUpdate: right.CanUpdate || false,
+        CanDelete: right.CanDelete || false,
+        CanPost: right.CanPost || false
       }));
 
       console.log('🔍 DEBUG - Rights to save:', rightsToSave);
 
       // Check if any permissions are selected
       const hasAnyPermissions = rightsToSave.some(
-        (right) => right.canView || right.canSave || right.canUpdate || right.canDelete || right.canPost
+        (right) => right.CanView || right.CanSave || right.CanUpdate || right.CanDelete || right.CanPost
       );
 
       if (!hasAnyPermissions) {
         showMessage('No permissions selected to save', 'warning');
         return;
       }
-
-      const result = await saveUserRights({ userRights: rightsToSave }).unwrap();
+      console.log('🔍 DEBUG - Saving user rights:', rightsToSave);
+      const result = await saveUserRights({ UserRights: rightsToSave }).unwrap();
 
       showMessage(result.message || 'User rights saved successfully!');
 

@@ -27,7 +27,11 @@ namespace Backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RateVisa>>> GetRateVisas()
         {
-            return await _context.RateVisas.Include(r => r.Pax).ToListAsync();
+            return await _context.RateVisas
+                .Include(r => r.Pax)
+                .Include(r => r.CreatedByUser)  // Include CreatedByUser
+                .Include(r => r.ModifiedByUser) // Include ModifiedByUser
+                .ToListAsync();
         }
 
         [HttpGet("{id}")]
@@ -35,6 +39,8 @@ namespace Backend.Controllers
         {
             var rateVisa = await _context.RateVisas
                 .Include(r => r.Pax)
+                .Include(r => r.CreatedByUser)  // Include CreatedByUser
+                .Include(r => r.ModifiedByUser) // Include ModifiedByUser
                 .FirstOrDefaultAsync(r => r.id == id);
 
             if (rateVisa == null)
@@ -84,9 +90,12 @@ namespace Backend.Controllers
             _context.RateVisas.Add(rateVisa);
             await _context.SaveChangesAsync();
 
-            // Load the Pax data for the response
+            // Load all navigation properties for the response
             await _context.Entry(rateVisa)
                 .Reference(r => r.Pax)
+                .LoadAsync();
+            await _context.Entry(rateVisa)
+                .Reference(r => r.CreatedByUser)
                 .LoadAsync();
 
             return CreatedAtAction("GetRateVisa", new { id = rateVisa.id }, rateVisa);

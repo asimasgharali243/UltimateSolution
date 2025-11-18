@@ -1,5 +1,6 @@
+// src/store/api/advertisementApi.js
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_BASE_URL, ADVERTISEMENT_ENDPOINTS } from './apiConfig';
+import { API_BASE_URL } from './apiConfig';
 
 export const advertisementApi = createApi({
   reducerPath: 'advertisementApi',
@@ -14,60 +15,50 @@ export const advertisementApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['AdvertisementMaster'],
+  tagTypes: ['Advertisement'],
   endpoints: (builder) => ({
-    // Master endpoints
     getMasters: builder.query({
-      query: () => ADVERTISEMENT_ENDPOINTS.GET_ALL_MASTERS,
-      providesTags: ['AdvertisementMaster'],
+      query: () => '/advertisement/masters',
+      providesTags: ['Advertisement'],
     }),
-    
     getMasterById: builder.query({
-      query: (id) => ADVERTISEMENT_ENDPOINTS.GET_MASTER_BY_ID(id),
-      providesTags: (result, error, id) => [{ type: 'AdvertisementMaster', id }],
+      query: (id) => `/advertisement/masters/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Advertisement', id }],
     }),
-    
+    getAccounts: builder.query({
+      query: () => '/advertisement/accounts',
+    }),
+    searchAccounts: builder.query({
+      query: (term) => `/advertisement/accounts/search?term=${term}`,
+    }),
+    checkVNoExists: builder.query({
+      query: (vNo) => `/advertisement/masters/check-vno/${vNo}`,
+    }),
     createMaster: builder.mutation({
       query: (data) => ({
-        url: ADVERTISEMENT_ENDPOINTS.CREATE_MASTER,
+        url: '/advertisement/masters',
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['AdvertisementMaster'],
+      invalidatesTags: ['Advertisement'],
     }),
-    
     updateMaster: builder.mutation({
       query: ({ id, ...data }) => ({
-        url: ADVERTISEMENT_ENDPOINTS.UPDATE_MASTER(id),
+        url: `/advertisement/masters/${id}`,
         method: 'PUT',
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
-        { type: 'AdvertisementMaster', id },
-        'AdvertisementMaster',
+        { type: 'Advertisement', id },
+        'Advertisement',
       ],
     }),
-    
     deleteMaster: builder.mutation({
       query: (id) => ({
-        url: ADVERTISEMENT_ENDPOINTS.DELETE_MASTER(id),
+        url: `/advertisement/masters/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['AdvertisementMaster'],
-    }),
-    
-    checkVNoExists: builder.query({
-      query: ({ vNo, excludeId = null }) => 
-        ADVERTISEMENT_ENDPOINTS.CHECK_VNO(vNo, excludeId),
-    }),
-    
-    // Client endpoints
-    getClients: builder.query({
-      query: () => ADVERTISEMENT_ENDPOINTS.GET_ALL_CLIENTS,
-    }),
-    
-    searchClients: builder.query({
-      query: (term) => ADVERTISEMENT_ENDPOINTS.SEARCH_CLIENTS(term),
+      invalidatesTags: ['Advertisement'],
     }),
   }),
 });
@@ -75,10 +66,10 @@ export const advertisementApi = createApi({
 export const {
   useGetMastersQuery,
   useGetMasterByIdQuery,
+  useGetAccountsQuery,
+  useLazySearchAccountsQuery,
+  useLazyCheckVNoExistsQuery,
   useCreateMasterMutation,
   useUpdateMasterMutation,
   useDeleteMasterMutation,
-  useLazyCheckVNoExistsQuery,
-  useGetClientsQuery,
-  useLazySearchClientsQuery,
 } = advertisementApi;

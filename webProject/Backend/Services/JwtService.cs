@@ -1,4 +1,3 @@
-// Services/JwtService.cs
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -49,81 +48,80 @@ namespace Backend.Services
             return tokenHandler.WriteToken(token);
         }
 
-        public async Task<List<Claim>> GetUserClaimsAsync(User user)
+       public async Task<List<Claim>> GetUserClaimsAsync(User user)
+{
+    var claims = new List<Claim>
+    {
+        new Claim("userId", user.UserID.ToString()),
+        new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
+        new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+        new Claim("fullName", user.UserFullName ?? string.Empty),
+        new Claim("lastLogin", user.LastLoginDT?.ToString("yyyy-MM-ddTHH:mm:ss") ?? DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        new Claim(JwtRegisteredClaimNames.Exp, DateTimeOffset.UtcNow.AddHours(Convert.ToDouble(_configuration["Jwt:ExpireHours"] ?? "24")).ToUnixTimeSeconds().ToString())
+    };
+
+    // FIXED: Check the actual IsAdmin field from User table
+    var userFromDb = await _context.Users
+        .Where(u => u.UserID == user.UserID)
+        .Select(u => new { u.IsAdmin })
+        .FirstOrDefaultAsync();
+
+    bool isAdmin = userFromDb?.IsAdmin ?? false;
+
+    if (isAdmin)
+    {
+        claims.Add(new Claim("role", "admin"));
+        claims.Add(new Claim("isAdmin", "true"));
+        Console.WriteLine($"🔍 DEBUG - User {user.UserName} is ADMIN (IsAdmin field = true)");
+    }
+    else
+    {
+        claims.Add(new Claim("role", "user"));
+        claims.Add(new Claim("isAdmin", "false"));
+        Console.WriteLine($"🔍 DEBUG - User {user.UserName} is REGULAR USER (IsAdmin field = false)");
+    }
+
+    // Add user rights as claims
+    var userRights = await _context.UserRights
+        .Include(ur => ur.UserForm)
+        .Where(ur => ur.userID == user.UserID)
+        .ToListAsync();
+
+    Console.WriteLine($"🔍 DEBUG - Adding {userRights.Count} permission claims for user {user.UserName}");
+
+    foreach (var right in userRights)
+    {
+        var formName = right.UserForm?.formName ?? "unknown";
+        if (right.CanView == true)
         {
-            var claims = new List<Claim>
-            {
-                new Claim("userId", user.UserID.ToString()),
-                new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
-                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-                new Claim("fullName", user.UserFullName ?? string.Empty),
-                new Claim("lastLogin", user.LastLoginDT?.ToString("yyyy-MM-ddTHH:mm:ss") ?? DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Exp, DateTimeOffset.UtcNow.AddHours(Convert.ToDouble(_configuration["Jwt:ExpireHours"] ?? "24")).ToUnixTimeSeconds().ToString())
-            };
-
-            // Check if user has any permissions to determine admin status
-            var userRightsCount = await _context.UserRights
-                .Where(ur => ur.userID == user.UserID)
-                .CountAsync();
-
-            // If user has all forms permissions, consider them admin
-            var totalFormsCount = await _context.UserForms.CountAsync();
-            var isAdmin = userRightsCount >= totalFormsCount;
-
-            if (isAdmin)
-            {
-                claims.Add(new Claim("role", "admin"));
-                claims.Add(new Claim("isAdmin", "true"));
-                Console.WriteLine($"🔍 DEBUG - User {user.UserName} detected as ADMIN");
-            }
-            else
-            {
-                claims.Add(new Claim("role", "user"));
-                Console.WriteLine($"🔍 DEBUG - User {user.UserName} has {userRightsCount} permissions out of {totalFormsCount} forms");
-            }
-
-            // Add user rights as claims
-            var userRights = await _context.UserRights
-                .Include(ur => ur.UserForm)
-                .Where(ur => ur.userID == user.UserID)
-                .ToListAsync();
-
-            Console.WriteLine($"🔍 DEBUG - Adding {userRights.Count} permission claims for user {user.UserName}");
-
-            foreach (var right in userRights)
-            {
-                var formName = right.UserForm?.formName ?? "unknown";
-                if (right.CanView == true)
-                {
-                    claims.Add(new Claim($"right_{formName}_view", "true"));
-                    Console.WriteLine($"🔍 DEBUG - Added permission: right_{formName}_view");
-                }
-                if (right.CanSave == true)
-                {
-                    claims.Add(new Claim($"right_{formName}_save", "true"));
-                    Console.WriteLine($"🔍 DEBUG - Added permission: right_{formName}_save");
-                }
-                if (right.CanUpdate == true)
-                {
-                    claims.Add(new Claim($"right_{formName}_update", "true"));
-                    Console.WriteLine($"🔍 DEBUG - Added permission: right_{formName}_update");
-                }
-                if (right.CanDelete == true)
-                {
-                    claims.Add(new Claim($"right_{formName}_delete", "true"));
-                    Console.WriteLine($"🔍 DEBUG - Added permission: right_{formName}_delete");
-                }
-                if (right.CanPost == true)
-                {
-                    claims.Add(new Claim($"right_{formName}_post", "true"));
-                    Console.WriteLine($"🔍 DEBUG - Added permission: right_{formName}_post");
-                }
-            }
-
-            return claims;
+            claims.Add(new Claim($"right_{formName}_view", "true"));
+            Console.WriteLine($"🔍 DEBUG - Added permission: right_{formName}_view");
         }
+        if (right.CanSave == true)
+        {
+            claims.Add(new Claim($"right_{formName}_save", "true"));
+            Console.WriteLine($"🔍 DEBUG - Added permission: right_{formName}_save");
+        }
+        if (right.CanUpdate == true)
+        {
+            claims.Add(new Claim($"right_{formName}_update", "true"));
+            Console.WriteLine($"🔍 DEBUG - Added permission: right_{formName}_update");
+        }
+        if (right.CanDelete == true)
+        {
+            claims.Add(new Claim($"right_{formName}_delete", "true"));
+            Console.WriteLine($"🔍 DEBUG - Added permission: right_{formName}_delete");
+        }
+        if (right.CanPost == true)
+        {
+            claims.Add(new Claim($"right_{formName}_post", "true"));
+            Console.WriteLine($"🔍 DEBUG - Added permission: right_{formName}_post");
+        }
+    }
 
+    return claims;
+}
         public ClaimsPrincipal? ValidateToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();

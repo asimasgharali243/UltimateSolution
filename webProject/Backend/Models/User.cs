@@ -27,5 +27,10 @@ namespace Backend.Models
         public DateTime? LastLoginDT { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+          [Column("IsAdmin")]
+        public bool? IsAdmin { get; set; } = false;
+
+        // Navigation properties
+        public virtual ICollection<UserRights> UserRights { get; set; } = new List<UserRights>();
     }
 }

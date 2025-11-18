@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Models;
 using Backend.Data;
-using Backend.Services;
 using Backend.DTOs;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,97 +16,96 @@ namespace Backend.Controllers
     public class UserRightsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly IPermissionService _permissionService;
 
-        public UserRightsController(ApplicationDbContext context, IPermissionService permissionService)
+        public UserRightsController(ApplicationDbContext context)
         {
             _context = context;
-            _permissionService = permissionService;
         }
 
-        // GET: api/UserRights/User/5
+        // GET: api/UserRights/Users
+        [HttpGet("Users")]
+        public async Task<ActionResult<IEnumerable<UserResponse>>> GetUsers()
+        {
+            try
+            {
+                var users = await _context.Users
+                    .Where(u => u.Active == true)
+                    .OrderBy(u => u.UserFullName)
+                    .Select(u => new UserResponse
+                    {
+                        UserID = u.UserID,
+                        UserName = u.UserName,
+                        UserFullName = u.UserFullName,
+                        UserImage = u.UserImage,
+                        LastLoginDT = u.LastLoginDT
+                    })
+                    .ToListAsync();
+
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Error retrieving users: {ex.Message}", details = ex.InnerException?.Message });
+            }
+        }
+
+        // GET: api/UserRights/Forms
+[HttpGet("Forms")]
+public async Task<ActionResult<IEnumerable<object>>> GetForms()
+{
+    try
+    {
+        var forms = await _context.UserForms
+            .Select(f => new 
+            {
+                formID = f.formID,
+                formName = f.formName ?? "Unknown",
+                formDisplayName = f.formDisplayName ?? "Unknown Form",
+                Menu = f.Menu ?? "Setup", // Ensure this field is included
+                sortOrder = f.sortOrder // Ensure this field is included
+            })
+            .OrderBy(f => f.Menu) // Optional: order by menu name
+            .ThenBy(f => f.sortOrder) // Then by sort order
+            .ToListAsync();
+
+        return Ok(forms);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { message = $"Error retrieving forms: {ex.Message}", details = ex.InnerException?.Message });
+    }
+}
+
+        // GET: api/UserRights/User/{userId}
         [HttpGet("User/{userId}")]
         public async Task<ActionResult<IEnumerable<UserRightsResponse>>> GetUserRightsByUser(int userId)
         {
-            var userRights = await _context.UserRights
-                .Include(ur => ur.UserForm)
-                .Where(ur => ur.userID == userId)
-                .Select(ur => new UserRightsResponse
-                {
-                    Id = ur.id,
-                    UserID = ur.userID,
-                    FormID = ur.formID,
-                    FormName = ur.UserForm.formDisplayName,
-                    FormSystemName = ur.UserForm.formName,
-                    CanView = ur.CanView ?? false,
-                    CanSave = ur.CanSave ?? false,
-                    CanUpdate = ur.CanUpdate ?? false,
-                    CanDelete = ur.CanDelete ?? false,
-                    CanPost = ur.CanPost ?? false
-                })
-                .ToListAsync();
-
-            return Ok(userRights);
-        }
-
-        // GET: api/UserRights/CurrentUser
-        [HttpGet("CurrentUser")]
-        public async Task<ActionResult<IEnumerable<UserRightsResponse>>> GetCurrentUserRights()
-        {
-            var userIdClaim = User.FindFirst("userId")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-                return Unauthorized();
-
-            var userRights = await _context.UserRights
-                .Include(ur => ur.UserForm)
-                .Where(ur => ur.userID == userId)
-                .Select(ur => new UserRightsResponse
-                {
-                    Id = ur.id,
-                    UserID = ur.userID,
-                    FormID = ur.formID,
-                    FormName = ur.UserForm.formDisplayName,
-                    FormSystemName = ur.UserForm.formName,
-                    CanView = ur.CanView ?? false,
-                    CanSave = ur.CanSave ?? false,
-                    CanUpdate = ur.CanUpdate ?? false,
-                    CanDelete = ur.CanDelete ?? false,
-                    CanPost = ur.CanPost ?? false
-                })
-                .ToListAsync();
-
-            return Ok(userRights);
-        }
-
-        // GET: api/UserRights/CurrentUser/Permissions
-        [HttpGet("CurrentUser/Permissions")]
-        public async Task<ActionResult<Dictionary<string, Dictionary<string, bool>>>> GetCurrentUserPermissions()
-        {
-            var userIdClaim = User.FindFirst("userId")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-                return Unauthorized();
-
-            var userRights = await _context.UserRights
-                .Include(ur => ur.UserForm)
-                .Where(ur => ur.userID == userId)
-                .ToListAsync();
-
-            var permissions = new Dictionary<string, Dictionary<string, bool>>();
-
-            foreach (var right in userRights)
+            try
             {
-                var formName = right.UserForm?.formName ?? "unknown";
-                permissions[formName] = new Dictionary<string, bool>
-                {
-                    ["view"] = right.CanView ?? false,
-                    ["save"] = right.CanSave ?? false,
-                    ["update"] = right.CanUpdate ?? false,
-                    ["delete"] = right.CanDelete ?? false,
-                    ["post"] = right.CanPost ?? false
-                };
-            }
+                var userRights = await _context.UserRights
+                    .Include(ur => ur.UserForm)
+                    .Where(ur => ur.userID == userId)
+                    .Select(ur => new UserRightsResponse
+                    {
+                        Id = ur.id,
+                        UserID = ur.userID,
+                        FormID = ur.formID,
+                        FormName = ur.UserForm.formDisplayName ?? "Unknown Form",
+                        FormSystemName = ur.UserForm.formName ?? "Unknown",
+                        CanView = ur.CanView ?? false,
+                        CanSave = ur.CanSave ?? false,
+                        CanUpdate = ur.CanUpdate ?? false,
+                        CanDelete = ur.CanDelete ?? false,
+                        CanPost = ur.CanPost ?? false
+                    })
+                    .ToListAsync();
 
-            return Ok(permissions);
+                return Ok(userRights);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Error retrieving user rights: {ex.Message}", details = ex.InnerException?.Message });
+            }
         }
 
         // POST: api/UserRights/Bulk
@@ -152,69 +150,84 @@ namespace Backend.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return StatusCode(500, new { message = $"Failed to save user rights: {ex.Message}" });
+                return StatusCode(500, new { message = $"Failed to save user rights: {ex.Message}", details = ex.InnerException?.Message });
             }
         }
 
-        // GET: api/UserRights/Forms
-        [HttpGet("Forms")]
-        public async Task<ActionResult<IEnumerable<UserForm>>> GetForms()
+        // GET: api/UserRights/TestConnection
+        [HttpGet("TestConnection")]
+        public async Task<ActionResult> TestConnection()
         {
-            // COMPLETELY REMOVE THE Active FILTER - UserForm doesn't have Active property
-            var forms = await _context.UserForms
-                .OrderBy(f => f.formDisplayName)
-                .ToListAsync();
+            try
+            {
+                var userCount = await _context.Users.CountAsync();
+                var formCount = await _context.UserForms.CountAsync();
+                var rightsCount = await _context.UserRights.CountAsync();
 
-            return Ok(forms);
+                return Ok(new { 
+                    message = "Database connection successful",
+                    userCount,
+                    formCount,
+                    rightsCount
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { 
+                    message = "Database connection failed",
+                    error = ex.Message,
+                    details = ex.InnerException?.Message
+                });
+            }
         }
 
-        // GET: api/UserRights/Users
-        [HttpGet("Users")]
-        public async Task<ActionResult<IEnumerable<UserResponse>>> GetUsers()
+        // GET: api/UserRights/CheckData
+        [HttpGet("CheckData")]
+        public async Task<ActionResult> CheckData()
         {
-            var users = await _context.Users
-                .Where(u => u.Active == true)
-                .OrderBy(u => u.UserFullName)
-                .Select(u => new UserResponse
-                {
-                    UserID = u.UserID,
-                    UserName = u.UserName,
-                    UserFullName = u.UserFullName,
-                    UserImage = u.UserImage,
-                    LastLoginDT = u.LastLoginDT
-                })
-                .ToListAsync();
+            try
+            {
+                var users = await _context.Users
+                    .Select(u => new { u.UserID, u.UserName, u.UserFullName, u.Active })
+                    .Take(5)
+                    .ToListAsync();
 
-            return Ok(users);
-        }
+                var forms = await _context.UserForms
+                    .Select(f => new { f.formID, f.formName, f.formDisplayName })
+                    .Take(5)
+                    .ToListAsync();
 
-        // GET: api/UserRights/HasPermission
-        [HttpGet("HasPermission")]
-        public async Task<ActionResult<bool>> HasPermission(string formName, string permission)
-        {
-            var userIdClaim = User.FindFirst("userId")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-                return Unauthorized();
+                var rights = await _context.UserRights
+                    .Include(ur => ur.UserForm)
+                    .Select(ur => new 
+                    { 
+                        ur.id, 
+                        ur.userID, 
+                        ur.formID,
+                        FormName = ur.UserForm.formDisplayName,
+                        ur.CanView,
+                        ur.CanSave 
+                    })
+                    .Take(5)
+                    .ToListAsync();
 
-            var hasPermission = await _permissionService.HasPermissionAsync(userId, formName, permission);
-            return Ok(hasPermission);
-        }
-
-        // GET: api/UserRights/FormPermissions/{formName}
-        [HttpGet("FormPermissions/{formName}")]
-        public async Task<ActionResult<Dictionary<string, bool>>> GetFormPermissions(string formName)
-        {
-            var userIdClaim = User.FindFirst("userId")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-                return Unauthorized();
-
-            var permissions = await _permissionService.GetUserFormPermissionsAsync(userId, formName);
-            return Ok(permissions);
-        }
-
-        private bool UserRightsExists(int id)
-        {
-            return _context.UserRights.Any(e => e.id == id);
+                return Ok(new { 
+                    users,
+                    forms, 
+                    rights,
+                    userCount = users.Count,
+                    formCount = forms.Count,
+                    rightsCount = rights.Count
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { 
+                    message = "Error checking data",
+                    error = ex.Message,
+                    details = ex.InnerException?.Message
+                });
+            }
         }
     }
 
@@ -248,4 +261,13 @@ namespace Backend.Controllers
         public bool CanDelete { get; set; }
         public bool CanPost { get; set; }
     }
+
+    // public class UserResponse
+    // {
+    //     public int UserID { get; set; }
+    //     public string UserName { get; set; } = string.Empty;
+    //     public string UserFullName { get; set; } = string.Empty;
+    //     public string UserImage { get; set; } = string.Empty;
+    //     public DateTime? LastLoginDT { get; set; }
+    // }
 }

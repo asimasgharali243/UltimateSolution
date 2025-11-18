@@ -85,7 +85,7 @@ namespace Backend.Controllers
             }
 
             // Set created_at timestamp
-            quotationTransportation.created_at = DateTime.Now;
+            // quotationTransportation.created_at = DateTime.Now;
 
             _context.QuotationTransportations.Add(quotationTransportation);
             await _context.SaveChangesAsync();
@@ -102,7 +102,7 @@ namespace Backend.Controllers
         [HttpPost("bulk")]
         public async Task<ActionResult> PostBulkQuotationTransportation(List<QuotationTransportation> quotationTransportations)
         {
-            var currentTime = DateTime.Now;
+            // var currentTime = DateTime.Now;
             
             // Validate all sectors exist
             var sectorIds = quotationTransportations.Select(qt => qt.sectorID).Distinct();
@@ -119,7 +119,7 @@ namespace Backend.Controllers
 
             foreach (var transportation in quotationTransportations)
             {
-                transportation.created_at = currentTime;
+                // transportation.created_at = currentTime;
                 _context.QuotationTransportations.Add(transportation);
             }
 

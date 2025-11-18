@@ -1,4 +1,3 @@
-// Services/UserService.cs
 using Backend.Data;
 using Backend.DTOs;
 using Backend.Helpers;
@@ -30,11 +29,12 @@ namespace Backend.Services
             var user = new User
             {
                 UserName = request.UserName,
-                UserPassword = PasswordHelper.HashPassword(request.Password),
+                UserPassword = PasswordHelper.HashPassword(request.Password ?? ""),
                 UserFullName = request.UserFullName,
                 UserImage = request.UserImage,
                 Active = true,
                 CreatedAt = DateTime.UtcNow
+                
             };
 
             _context.Users.Add(user);
@@ -47,7 +47,7 @@ namespace Backend.Services
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.UserName == request.UserName && u.Active == true);
 
-            if (user == null || !PasswordHelper.VerifyPassword(request.Password, user.UserPassword))
+            if (user == null || !PasswordHelper.VerifyPassword(request.Password ?? "", user.UserPassword ?? ""))
                 return null;
 
             return user;

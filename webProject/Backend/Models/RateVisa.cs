@@ -16,8 +16,14 @@ namespace Backend.Models
         public int? ModifyBy { get; set; }
         public DateTime? ModifyDT { get; set; }
 
-        // Navigation property
+        // Navigation properties
         [ForeignKey("paxid")]
         public virtual Pax? Pax { get; set; }
+
+        [ForeignKey("CreatedBy")]
+        public virtual User? CreatedByUser { get; set; }
+
+        [ForeignKey("ModifyBy")]
+        public virtual User? ModifiedByUser { get; set; }
     }
 }

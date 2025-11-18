@@ -34,7 +34,8 @@ import {
   Print as PrintIcon,
   Email as EmailIcon,
   LocationCity as CityIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 
 // Import RTK Query hooks
@@ -57,7 +58,7 @@ const CityManagement = () => {
 
   // RTK Query hooks
   const { data: cities = [], isLoading: citiesLoading, error: citiesError, refetch: refetchCities } = useGetCitiesQuery();
-
+  console.log('cityies', cities);
   const [createCity, { isLoading: creatingCity }] = useCreateCityMutation();
   const [updateCity, { isLoading: updatingCity }] = useUpdateCityMutation();
   const [deleteCity, { isLoading: deletingCity }] = useDeleteCityMutation();
@@ -100,7 +101,6 @@ const CityManagement = () => {
 
   // Handle input changes for new city
   const handleNewCityChange = useCallback((field, value) => {
-    console.log('record', nameCheckResult);
     setNewCity((prev) => ({
       ...prev,
       [field]: value
@@ -114,6 +114,7 @@ const CityManagement = () => {
       [field]: value
     }));
   }, []);
+
   // Name validation helper text - FIXED
   const getNameHelperText = useCallback(() => {
     if (!newCity.cityName) return 'Enter city name';
@@ -293,6 +294,22 @@ const CityManagement = () => {
     } catch (error) {
       return '-';
     }
+  }, []);
+
+  // Get user display name - FIXED: Use lowercase property names
+  const getUserDisplayName = useCallback((user) => {
+    if (!user) return 'Unknown User';
+    return user.userFullName || user.userName || `User ${user.userID}`;
+  }, []);
+
+  // Get created by user - FIXED: Use lowercase property name
+  const getCreatedByUser = useCallback((city) => {
+    return city.createdByUser || null;
+  }, []);
+
+  // Get modified by user - FIXED: Use lowercase property name
+  const getModifiedByUser = useCallback((city) => {
+    return city.modifiedByUser || null;
   }, []);
 
   // Table cell styles
@@ -484,11 +501,10 @@ const CityManagement = () => {
                       {[
                         { header: 'City ID', width: '100px' },
                         { header: 'City Name', width: '200px' },
-                        { header: 'Created By', width: '120px' },
+                        { header: 'Created By', width: '150px' },
                         { header: 'Created Date', width: '150px' },
-                        { header: 'Modified By', width: '120px' },
+                        { header: 'Modified By', width: '150px' },
                         { header: 'Modified Date', width: '150px' },
-                        // { header: 'Status', width: '120px' },
                         { header: 'Actions', width: '120px' }
                       ].map((item, index) => (
                         <TableCell
@@ -527,26 +543,33 @@ const CityManagement = () => {
                           </Typography>
                         </TableCell>
                         <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">User {city.createdBy}</Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <PersonIcon sx={{ fontSize: 16, color: theme.palette.primary.main }} />
+                            <Typography variant="body2">
+                              {getCreatedByUser(city) ? getUserDisplayName(getCreatedByUser(city)) : `User ${city.createdBy}`}
+                            </Typography>
+                          </Box>
                         </TableCell>
                         <TableCell sx={tableCellStyles}>
                           <Typography variant="body2">{formatDate(city.createdDT)}</Typography>
                         </TableCell>
                         <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{city.modifyBy ? `User ${city.modifyBy}` : '-'}</Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {getModifiedByUser(city) ? (
+                              <>
+                                <PersonIcon sx={{ fontSize: 16, color: theme.palette.secondary.main }} />
+                                <Typography variant="body2">{getUserDisplayName(getModifiedByUser(city))}</Typography>
+                              </>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                -
+                              </Typography>
+                            )}
+                          </Box>
                         </TableCell>
                         <TableCell sx={tableCellStyles}>
                           <Typography variant="body2">{formatDate(city.modifyDT)}</Typography>
                         </TableCell>
-                        {/* <TableCell sx={tableCellStyles}>
-                          <Chip
-                            label="Active"
-                            color="success"
-                            variant="filled"
-                            size="small"
-                            sx={{ fontWeight: 'bold', minWidth: '80px' }}
-                          />
-                        </TableCell> */}
                         <TableCell sx={tableCellStyles}>
                           <Box sx={{ display: 'flex', gap: 1 }}>
                             <Tooltip title="Edit City">
@@ -578,7 +601,7 @@ const CityManagement = () => {
                   </TableBody>
                   <TableFooter>
                     <TableRow sx={{ backgroundColor: theme.palette.grey[100] }}>
-                      <TableCell colSpan={8} align="center" sx={{ fontWeight: 'bold', fontSize: '1rem', py: 2 }}>
+                      <TableCell colSpan={7} align="center" sx={{ fontWeight: 'bold', fontSize: '1rem', py: 2 }}>
                         Total Cities: {cities.length} | Last Updated:{' '}
                         {new Date().toLocaleDateString('en-US', {
                           year: 'numeric',
@@ -653,13 +676,31 @@ const CityManagement = () => {
                   </Typography>
                   <Grid container spacing={1}>
                     <Grid item xs={6}>
-                      <Typography variant="caption">Created:</Typography>
+                      <Typography variant="caption">Created By:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {getCreatedByUser(editingCity)
+                          ? getUserDisplayName(getCreatedByUser(editingCity))
+                          : `User ${editingCity.createdBy}`}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption">Created Date:</Typography>
                       <Typography variant="body2" fontWeight="medium">
                         {formatDate(editingCity.createdDT)}
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="caption">Last Modified:</Typography>
+                      <Typography variant="caption">Last Modified By:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {getModifiedByUser(editingCity)
+                          ? getUserDisplayName(getModifiedByUser(editingCity))
+                          : editingCity.modifyBy
+                            ? `User ${editingCity.modifyBy}`
+                            : 'Never'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption">Last Modified Date:</Typography>
                       <Typography variant="body2" fontWeight="medium">
                         {editingCity.modifyDT ? formatDate(editingCity.modifyDT) : 'Never'}
                       </Typography>

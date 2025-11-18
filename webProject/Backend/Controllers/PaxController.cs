@@ -25,15 +25,47 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Pax>>> GetPaxes()
+        public async Task<ActionResult<IEnumerable<object>>> GetPaxes()
         {
-            return await _context.Paxes.ToListAsync();
+            var paxes = await _context.Paxes
+                .Include(p => p.CreatedByUser)
+                .Include(p => p.ModifiedByUser)
+                .OrderBy(p => p.paxTitle)
+                .Select(p => new
+                {
+                    p.paxID,
+                    p.paxTitle,
+                    p.CreatedBy,
+                    CreatedByName = p.CreatedByUser != null ? p.CreatedByUser.UserFullName : "Unknown",
+                    p.CreatedDT,
+                    p.ModifyBy,
+                    ModifiedByName = p.ModifiedByUser != null ? p.ModifiedByUser.UserFullName : "Not Modified",
+                    p.ModifyDT
+                })
+                .ToListAsync();
+
+            return Ok(paxes);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Pax>> GetPax(int id)
+        public async Task<ActionResult<object>> GetPax(int id)
         {
-            var pax = await _context.Paxes.FindAsync(id);
+            var pax = await _context.Paxes
+                .Include(p => p.CreatedByUser)
+                .Include(p => p.ModifiedByUser)
+                .Where(p => p.paxID == id)
+                .Select(p => new
+                {
+                    p.paxID,
+                    p.paxTitle,
+                    p.CreatedBy,
+                    CreatedByName = p.CreatedByUser != null ? p.CreatedByUser.UserFullName : "Unknown",
+                    p.CreatedDT,
+                    p.ModifyBy,
+                    ModifiedByName = p.ModifiedByUser != null ? p.ModifiedByUser.UserFullName : "Not Modified",
+                    p.ModifyDT
+                })
+                .FirstOrDefaultAsync();
 
             if (pax == null)
             {
@@ -80,7 +112,7 @@ namespace Backend.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Pax>> PostPax(Pax pax)
+        public async Task<ActionResult<object>> PostPax(Pax pax)
         {
             // Check if pax title already exists
             var existingPax = await _context.Paxes
@@ -101,7 +133,25 @@ namespace Backend.Controllers
             _context.Paxes.Add(pax);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetPax", new { id = pax.paxID }, pax);
+            // Reload with user information
+            var createdPax = await _context.Paxes
+                .Include(p => p.CreatedByUser)
+                .Include(p => p.ModifiedByUser)
+                .Where(p => p.paxID == pax.paxID)
+                .Select(p => new
+                {
+                    p.paxID,
+                    p.paxTitle,
+                    p.CreatedBy,
+                    CreatedByName = p.CreatedByUser != null ? p.CreatedByUser.UserFullName : "Unknown",
+                    p.CreatedDT,
+                    p.ModifyBy,
+                    ModifiedByName = p.ModifiedByUser != null ? p.ModifiedByUser.UserFullName : "Not Modified",
+                    p.ModifyDT
+                })
+                .FirstOrDefaultAsync();
+
+            return CreatedAtAction("GetPax", new { id = pax.paxID }, createdPax);
         }
 
         [HttpPut("{id}")]

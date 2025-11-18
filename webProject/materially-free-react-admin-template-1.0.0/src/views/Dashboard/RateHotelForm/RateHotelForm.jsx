@@ -130,7 +130,9 @@ const RateHotelManagement = () => {
 
   // Check if add button should be disabled
   const isAddButtonDisabled = useMemo(() => {
-    return loading || !newRateHotel.cityID || !newRateHotel.hotelID || !newRateHotel.Locations.trim() || !newRateHotel.Distance.trim();
+    const locations = newRateHotel.Locations || '';
+    const distance = newRateHotel.Distance || '';
+    return loading || !newRateHotel.cityID || !newRateHotel.hotelID || !locations.trim() || !distance.trim();
   }, [loading, newRateHotel.cityID, newRateHotel.hotelID, newRateHotel.Locations, newRateHotel.Distance]);
 
   // Add new rate hotel
@@ -139,8 +141,8 @@ const RateHotelManagement = () => {
       const rateHotelData = {
         cityID: parseInt(newRateHotel.cityID),
         hotelID: parseInt(newRateHotel.hotelID),
-        Locations: newRateHotel.Locations.trim(),
-        Distance: newRateHotel.Distance.trim(),
+        Locations: (newRateHotel.Locations || '').trim(),
+        Distance: (newRateHotel.Distance || '').trim(),
         sharing: parseInt(newRateHotel.sharing) || 0,
         quint: parseInt(newRateHotel.quint) || 0,
         quad: parseInt(newRateHotel.quad) || 0,
@@ -172,9 +174,24 @@ const RateHotelManagement = () => {
     }
   };
 
-  // Edit rate hotel
+  // Edit rate hotel - FIXED: Handle property name mismatch
   const openEditDialog = useCallback((rateHotel) => {
-    setEditingRateHotel({ ...rateHotel });
+    // Normalize the rate hotel data to handle property name inconsistencies
+    const normalizedRateHotel = {
+      ...rateHotel,
+      // Handle both 'Locations' and 'locations' properties
+      Locations: rateHotel.Locations || rateHotel.locations || '',
+      // Handle both 'Distance' and 'distance' properties
+      Distance: rateHotel.Distance || rateHotel.distance || '',
+      // Ensure all numeric fields have proper values
+      sharing: rateHotel.sharing || 0,
+      quint: rateHotel.quint || 0,
+      quad: rateHotel.quad || 0,
+      triple: rateHotel.triple || 0,
+      doble: rateHotel.doble || 0
+    };
+
+    setEditingRateHotel(normalizedRateHotel);
     setEditDialogOpen(true);
   }, []);
 
@@ -183,8 +200,8 @@ const RateHotelManagement = () => {
       const rateHotelData = {
         cityID: parseInt(editingRateHotel.cityID),
         hotelID: parseInt(editingRateHotel.hotelID),
-        Locations: editingRateHotel.Locations.trim(),
-        Distance: editingRateHotel.Distance.trim(),
+        Locations: (editingRateHotel.Locations || '').trim(),
+        Distance: (editingRateHotel.Distance || '').trim(),
         sharing: parseInt(editingRateHotel.sharing) || 0,
         quint: parseInt(editingRateHotel.quint) || 0,
         quad: parseInt(editingRateHotel.quad) || 0,
@@ -240,6 +257,16 @@ const RateHotelManagement = () => {
   const getHotelName = (hotelID) => {
     const hotel = hotels.find((h) => parseInt(h.hotelID) === parseInt(hotelID));
     return hotel ? hotel.hotelName : 'Unknown';
+  };
+
+  // Get locations for display - FIXED: Handle both property names
+  const getLocations = (rateHotel) => {
+    return rateHotel.Locations || rateHotel.locations || 'N/A';
+  };
+
+  // Get distance for display - FIXED: Handle both property names
+  const getDistance = (rateHotel) => {
+    return rateHotel.Distance || rateHotel.distance || 'N/A';
   };
 
   // Clear message after 5 seconds
@@ -470,10 +497,10 @@ const RateHotelManagement = () => {
                           <Typography variant="body2">{getHotelName(rate.hotelID)}</Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">{rate.Locations}</Typography>
+                          <Typography variant="body2">{getLocations(rate)}</Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">{rate.Distance}</Typography>
+                          <Typography variant="body2">{getDistance(rate)}</Typography>
                         </TableCell>
                         {/* Room Rates */}
                         {['sharing', 'quint', 'quad', 'triple', 'doble'].map((roomType) => (
@@ -599,7 +626,7 @@ const RateHotelManagement = () => {
                 <TextField
                   fullWidth
                   label="Locations"
-                  value={editingRateHotel.Locations}
+                  value={editingRateHotel.Locations || ''}
                   onChange={(e) => handleEditRateHotelChange('Locations', e.target.value)}
                   size="small"
                   sx={{ mt: 1 }}
@@ -610,7 +637,7 @@ const RateHotelManagement = () => {
                 <TextField
                   fullWidth
                   label="Distance"
-                  value={editingRateHotel.Distance}
+                  value={editingRateHotel.Distance || ''}
                   onChange={(e) => handleEditRateHotelChange('Distance', e.target.value)}
                   size="small"
                   sx={{ mt: 1 }}
@@ -624,7 +651,7 @@ const RateHotelManagement = () => {
                     fullWidth
                     label={roomType.toUpperCase()}
                     type="number"
-                    value={editingRateHotel[roomType]}
+                    value={editingRateHotel[roomType] || 0}
                     onChange={(e) => handleEditRateHotelChange(roomType, e.target.value)}
                     size="small"
                     sx={{ mt: 1 }}
@@ -645,7 +672,7 @@ const RateHotelManagement = () => {
             variant="contained"
             onClick={handleSaveEditedRateHotel}
             startIcon={updatingRateHotel ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-            disabled={loading || !editingRateHotel?.Locations.trim() || !editingRateHotel?.Distance.trim()}
+            disabled={loading || !(editingRateHotel?.Locations || '').trim() || !(editingRateHotel?.Distance || '').trim()}
           >
             {updatingRateHotel ? 'Saving...' : 'Save Changes'}
           </Button>

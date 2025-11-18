@@ -28,7 +28,8 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  Avatar
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
@@ -39,7 +40,8 @@ import {
   Print as PrintIcon,
   Email as EmailIcon,
   Receipt as VisaIcon,
-  People as PaxIcon
+  People as PaxIcon,
+  Person as UserIcon
 } from '@mui/icons-material';
 import {
   useGetRateVisasQuery,
@@ -68,7 +70,16 @@ const RateVisaManagement = () => {
   const [createRateVisa, { isLoading: creating }] = useCreateRateVisaMutation();
   const [updateRateVisa, { isLoading: updating }] = useUpdateRateVisaMutation();
   const [deleteRateVisa, { isLoading: deleting }] = useDeleteRateVisaMutation();
-  isLoading ? null : console.log('records', rateVisas);
+  isLoading ? null : console.log(rateVisas);
+  // Debug log to check the data structure
+  useEffect(() => {
+    if (!isLoading && rateVisas.length > 0) {
+      console.log('Sample rateVisa data:', rateVisas[0]);
+      console.log('CreatedByUser:', rateVisas[0].createdByUser);
+      console.log('ModifiedByUser:', rateVisas[0].modifiedByUser);
+    }
+  }, [isLoading, rateVisas]);
+
   // Handle errors
   useEffect(() => {
     if (rateVisaError) {
@@ -106,7 +117,6 @@ const RateVisaManagement = () => {
       const rateVisaData = {
         paxid: parseInt(formData.paxid),
         rate: parseInt(formData.rate)
-        // Backend will handle CreatedBy, CreatedDT using JWT token
       };
 
       await createRateVisa(rateVisaData).unwrap();
@@ -148,15 +158,14 @@ const RateVisaManagement = () => {
 
     try {
       const updateData = {
-        id: editingRateVisa.id, // Include the ID in the body
+        id: editingRateVisa.id,
         paxid: parseInt(editingRateVisa.paxid),
         rate: parseInt(editingRateVisa.rate)
-        // Backend will handle ModifyBy, ModifyDT using JWT token
       };
 
       await updateRateVisa({
-        id: editingRateVisa.id, // ID for the URL
-        ...updateData // Data for the body
+        id: editingRateVisa.id,
+        ...updateData
       }).unwrap();
 
       setEditDialogOpen(false);
@@ -196,7 +205,9 @@ const RateVisaManagement = () => {
       return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       });
     } catch {
       return '-';
@@ -215,18 +226,24 @@ const RateVisaManagement = () => {
     return 'default';
   };
 
-  // Display user name
-  const getUserDisplayName = (userId) => {
-    if (!userId) return '-';
+  // Get user display name with avatar - CORRECTED FUNCTION
+  const getUserDisplay = (user) => {
+    if (!user) return null;
 
-    // Get current user ID from auth state
-    const currentUserId = currentUser?.userID || currentUser?.userId;
+    // Use userFullName if available, otherwise userName, otherwise userID
+    const displayName = user.userFullName || user.userName || `User ${user.userID}`;
+    const initials = displayName
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
 
-    if (currentUserId && currentUserId === userId) {
-      return 'You';
-    }
-
-    return `User ${userId}`;
+    return {
+      displayName,
+      initials,
+      email: user.email || user.userName // Use email or userName as fallback
+    };
   };
 
   // Table cell styles
@@ -400,18 +417,17 @@ const RateVisaManagement = () => {
                   }
                 }}
               >
-                <Table size="small" sx={{ minWidth: 800 }}>
+                <Table size="small" sx={{ minWidth: 1000 }}>
                   <TableHead sx={{ backgroundColor: theme.palette.primary.main }}>
                     <TableRow>
                       {[
                         { header: 'ID', width: '80px' },
                         { header: 'Passenger Type', width: '150px' },
                         { header: 'Visa Rate', width: '120px' },
-                        { header: 'Category', width: '150px' },
-                        { header: 'Created By', width: '120px' },
-                        { header: 'Created Date', width: '120px' },
-                        { header: 'Modified By', width: '120px' },
-                        { header: 'Modified Date', width: '120px' },
+                        { header: 'Created By', width: '150px' },
+                        { header: 'Created Date', width: '150px' },
+                        { header: 'Modified By', width: '150px' },
+                        { header: 'Modified Date', width: '150px' },
                         { header: 'Status', width: '100px' },
                         { header: 'Actions', width: '120px' }
                       ].map((item, index) => (
@@ -432,89 +448,128 @@ const RateVisaManagement = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {rateVisas.map((rateVisa) => (
-                      <TableRow
-                        key={rateVisa.id}
-                        sx={{
-                          '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover },
-                          '&:hover': { backgroundColor: theme.palette.action.selected }
-                        }}
-                      >
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2" fontWeight="bold" color="primary">
-                            #{rateVisa.id}
-                          </Typography>
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Chip
-                            icon={<PaxIcon />}
-                            label={rateVisa.pax?.paxTitle || 'Unknown Type'}
-                            color={getPaxTypeColor(rateVisa.pax?.paxTitle)}
-                            variant="filled"
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body1" fontWeight="bold" color="success.main">
-                            ${rateVisa.rate}
-                          </Typography>
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Chip label="Visa Fee" color="primary" variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{getUserDisplayName(rateVisa.createdBy)}</Typography>
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{formatDate(rateVisa.createdDT)}</Typography>
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{rateVisa.modifyBy ? getUserDisplayName(rateVisa.modifyBy) : '-'}</Typography>
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{formatDate(rateVisa.modifyDT)}</Typography>
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Chip
-                            label="Active"
-                            color="success"
-                            variant="filled"
-                            size="small"
-                            sx={{ fontWeight: 'bold', minWidth: '80px' }}
-                          />
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Tooltip title="Edit Visa Rate">
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={() => openEditDialog(rateVisa)}
-                                sx={{ borderRadius: 1 }}
-                                disabled={loading}
-                              >
-                                <EditIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Delete Visa Rate">
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => deleteRateVisaHandler(rateVisa.id)}
-                                sx={{ borderRadius: 1 }}
-                                disabled={loading}
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {rateVisas.map((rateVisa) => {
+                      const createdByUser = rateVisa.createdByUser;
+                      const modifiedByUser = rateVisa.modifiedByUser;
+                      console.log('Created By User:', createdByUser);
+                      console.log('Modified By User:', modifiedByUser);
+                      return (
+                        <TableRow
+                          key={rateVisa.id}
+                          sx={{
+                            '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover },
+                            '&:hover': { backgroundColor: theme.palette.action.selected }
+                          }}
+                        >
+                          <TableCell sx={tableCellStyles}>
+                            <Typography variant="body2" fontWeight="bold" color="primary">
+                              #{rateVisa.id}
+                            </Typography>
+                          </TableCell>
+                          <TableCell sx={tableCellStyles}>
+                            <Chip
+                              icon={<PaxIcon />}
+                              label={rateVisa.pax?.paxTitle || 'Unknown Type'}
+                              color={getPaxTypeColor(rateVisa.pax?.paxTitle)}
+                              variant="filled"
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell sx={tableCellStyles}>
+                            <Typography variant="body1" fontWeight="bold" color="success.main">
+                              ${rateVisa.rate}
+                            </Typography>
+                          </TableCell>
+                          <TableCell sx={tableCellStyles}>
+                            {createdByUser ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                {/* <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main, fontSize: '0.75rem' }}>
+                                  {createdByUser.initials}
+                                </Avatar> */}
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {createdByUser.userFullName}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    ID: {createdByUser.userID}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                -
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell sx={tableCellStyles}>
+                            <Typography variant="body2">{formatDate(rateVisa.createdDT)}</Typography>
+                          </TableCell>
+                          <TableCell sx={tableCellStyles}>
+                            {modifiedByUser ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                {/* <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.secondary.main, fontSize: '0.75rem' }}>
+                                  {modifiedByUser.initials}
+                                </Avatar> */}
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {modifiedByUser.userFullName}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    ID: {modifiedByUser.userID}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                -
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell sx={tableCellStyles}>
+                            <Typography variant="body2">{formatDate(rateVisa.modifyDT)}</Typography>
+                          </TableCell>
+                          <TableCell sx={tableCellStyles}>
+                            <Chip
+                              label="Active"
+                              color="success"
+                              variant="filled"
+                              size="small"
+                              sx={{ fontWeight: 'bold', minWidth: '80px' }}
+                            />
+                          </TableCell>
+                          <TableCell sx={tableCellStyles}>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Tooltip title="Edit Visa Rate">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => openEditDialog(rateVisa)}
+                                  sx={{ borderRadius: 1 }}
+                                  disabled={loading}
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete Visa Rate">
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => deleteRateVisaHandler(rateVisa.id)}
+                                  sx={{ borderRadius: 1 }}
+                                  disabled={loading}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                   <TableFooter>
                     <TableRow sx={{ backgroundColor: theme.palette.grey[100] }}>
-                      <TableCell colSpan={10} align="center" sx={{ fontWeight: 'bold', fontSize: '1rem', py: 2 }}>
+                      <TableCell colSpan={9} align="center" sx={{ fontWeight: 'bold', fontSize: '1rem', py: 2 }}>
                         Total Visa Rates: {rateVisas.length} | Last Updated:{' '}
                         {new Date().toLocaleDateString('en-US', {
                           year: 'numeric',
@@ -620,17 +675,39 @@ const RateVisaManagement = () => {
               <Grid item xs={12}>
                 <Box sx={{ p: 2, bgcolor: theme.palette.grey[50], borderRadius: 1, mt: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Visa Rate Information:
+                    Audit Information:
                   </Typography>
                   <Grid container spacing={1}>
                     <Grid item xs={6}>
-                      <Typography variant="caption">Created:</Typography>
+                      <Typography variant="caption">Created By:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {editingRateVisa.createdByUser
+                          ? editingRateVisa.createdByUser.userFullName ||
+                            editingRateVisa.createdByUser.userName ||
+                            `User ${editingRateVisa.createdBy}`
+                          : `User ${editingRateVisa.createdBy}`}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption">Created Date:</Typography>
                       <Typography variant="body2" fontWeight="medium">
                         {formatDate(editingRateVisa.createdDT)}
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="caption">Last Modified:</Typography>
+                      <Typography variant="caption">Last Modified By:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {editingRateVisa.modifiedByUser
+                          ? editingRateVisa.modifiedByUser.userFullName ||
+                            editingRateVisa.modifiedByUser.userName ||
+                            `User ${editingRateVisa.modifyBy}`
+                          : editingRateVisa.modifyBy
+                            ? `User ${editingRateVisa.modifyBy}`
+                            : 'Never modified'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption">Last Modified Date:</Typography>
                       <Typography variant="body2" fontWeight="medium">
                         {editingRateVisa.modifyDT ? formatDate(editingRateVisa.modifyDT) : 'Never'}
                       </Typography>

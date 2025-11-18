@@ -26,7 +26,8 @@ import {
   Alert,
   CircularProgress,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Avatar
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
@@ -37,7 +38,8 @@ import {
   Print as PrintIcon,
   Email as EmailIcon,
   Public as SectorIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Person as UserIcon
 } from '@mui/icons-material';
 
 // RTK Query hooks
@@ -53,15 +55,15 @@ import {
 // Import auth selector to get current user
 import { useSelector } from 'react-redux';
 
-// Fixed SectorRow component with proper field mapping
-const SectorRow = React.memo(({ sector, onToggleStatus, onEdit, onDelete, toggleLoading, theme, formatDate }) => {
+// Fixed SectorRow component with proper field mapping and user details
+const SectorRow = React.memo(({ sector, onToggleStatus, onEdit, onDelete, toggleLoading, theme, formatDate, getUserDisplay }) => {
   // FIXED: Use the correct field names from backend response
   const isActive = Boolean(sector.active);
   const sectorId = sector.sectorID;
   const sectorName = sector.sectorName;
-  const createdBy = sector.createdBy;
+  const createdByUser = sector.createdByUser;
   const createdDT = sector.createdDT;
-  const modifyBy = sector.modifyBy;
+  const modifiedByUser = sector.modifiedByUser;
   const modifyDT = sector.modifyDT;
 
   const getStatusColor = (active) => (active ? 'success' : 'error');
@@ -102,6 +104,10 @@ const SectorRow = React.memo(({ sector, onToggleStatus, onEdit, onDelete, toggle
     [sector.sectorID, onDelete]
   );
 
+  // FIXED: Get user display information
+  const createdByDisplay = getUserDisplay(createdByUser);
+  const modifiedByDisplay = getUserDisplay(modifiedByUser);
+
   return (
     <TableRow
       sx={{
@@ -129,13 +135,63 @@ const SectorRow = React.memo(({ sector, onToggleStatus, onEdit, onDelete, toggle
         />
       </TableCell>
       <TableCell sx={tableCellStyles}>
-        <Typography variant="body2">User {createdBy || 'System'}</Typography>
+        {createdByDisplay ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main, fontSize: '0.75rem' }}>
+              {createdByDisplay.initials}
+            </Avatar> */}
+            <Box>
+              <Typography variant="body2" fontWeight="medium">
+                {createdByDisplay.displayName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                ID: {createdByDisplay.userId}
+              </Typography>
+            </Box>
+          </Box>
+        ) : (
+          <Box>
+            <Typography variant="body2" fontWeight="medium">
+              User {sector.createdBy || 'System'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              ID: {sector.createdBy || 'N/A'}
+            </Typography>
+          </Box>
+        )}
       </TableCell>
       <TableCell sx={tableCellStyles}>
         <Typography variant="body2">{formatDate(createdDT)}</Typography>
       </TableCell>
       <TableCell sx={tableCellStyles}>
-        <Typography variant="body2">{modifyBy ? `User ${modifyBy}` : '-'}</Typography>
+        {modifiedByDisplay ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.secondary.main, fontSize: '0.75rem' }}>
+              {modifiedByDisplay.initials}
+            </Avatar> */}
+            <Box>
+              <Typography variant="body2" fontWeight="medium">
+                {modifiedByDisplay.displayName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                ID: {modifiedByDisplay.userId}
+              </Typography>
+            </Box>
+          </Box>
+        ) : sector.modifyBy ? (
+          <Box>
+            <Typography variant="body2" fontWeight="medium">
+              User {sector.modifyBy}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              ID: {sector.modifyBy}
+            </Typography>
+          </Box>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            -
+          </Typography>
+        )}
       </TableCell>
       <TableCell sx={tableCellStyles}>
         <Typography variant="body2">{formatDate(modifyDT)}</Typography>
@@ -212,6 +268,15 @@ const SectorManagement = React.memo(() => {
   // RTK Query hooks
   const { data: sectors = [], isLoading: sectorsLoading, error: sectorsError, refetch } = useGetSectorsQuery();
 
+  // Debug log to check the data structure
+  React.useEffect(() => {
+    if (!sectorsLoading && sectors.length > 0) {
+      console.log('Sample sector data:', sectors[0]);
+      console.log('CreatedByUser:', sectors[0].createdByUser);
+      console.log('ModifiedByUser:', sectors[0].modifiedByUser);
+    }
+  }, [sectorsLoading, sectors]);
+
   const [createSector, { isLoading: creatingSector }] = useCreateSectorMutation();
   const [updateSector, { isLoading: updatingSector }] = useUpdateSectorMutation();
   const [patchSector, { isLoading: patchingSector }] = usePatchSectorMutation();
@@ -220,7 +285,7 @@ const SectorManagement = React.memo(() => {
   // Local state
   const [formData, setFormData] = useState({
     sectorName: '',
-    active: true // FIXED: Changed to lowercase to match backend
+    active: true
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingSector, setEditingSector] = useState(null);
@@ -234,6 +299,28 @@ const SectorManagement = React.memo(() => {
   } = useCheckSectorNameExistsQuery(formData.sectorName, {
     skip: !formData.sectorName || formData.sectorName.length < 2
   });
+
+  // FIXED: Get user display name with avatar - UPDATED to match your JSON structure
+  const getUserDisplay = useCallback((user) => {
+    if (!user) return null;
+
+    // Use userFullName if available, otherwise userName, otherwise userID
+    const displayName = user.userFullName || user.userName || `User ${user.userID}`;
+    const initials = displayName
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+
+    return {
+      displayName,
+      initials,
+      userId: user.userID,
+      userName: user.userName,
+      email: user.email || user.userName
+    };
+  }, []);
 
   // Handle input changes for new sector
   const handleInputChange = useCallback((field, value) => {
@@ -253,7 +340,7 @@ const SectorManagement = React.memo(() => {
 
   // Get current user ID safely
   const getCurrentUserId = useCallback(() => {
-    return currentUser?.userID || currentUser?.id || 1; // Fallback if user not available
+    return currentUser?.userID || currentUser?.id || 1;
   }, [currentUser]);
 
   // Add new sector
@@ -284,7 +371,6 @@ const SectorManagement = React.memo(() => {
     }
 
     try {
-      // FIXED: Use lowercase field names to match backend
       const sectorData = {
         sectorName: formData.sectorName.trim(),
         active: Boolean(formData.active),
@@ -306,7 +392,6 @@ const SectorManagement = React.memo(() => {
 
   // Edit sector
   const openEditDialog = useCallback((sector) => {
-    // FIXED: Use correct field names from backend
     setEditingSector({
       ...sector,
       active: Boolean(sector.active)
@@ -337,7 +422,6 @@ const SectorManagement = React.memo(() => {
     }
 
     try {
-      // FIXED: Use lowercase field names to match backend
       await updateSector({
         id: editingSector.sectorID,
         data: {
@@ -377,7 +461,7 @@ const SectorManagement = React.memo(() => {
     [deleteSector]
   );
 
-  // FIXED: Toggle sector status with proper field names
+  // Toggle sector status
   const handleToggleSectorStatus = useCallback(
     async (sector) => {
       const newActiveStatus = !sector.active;
@@ -386,7 +470,7 @@ const SectorManagement = React.memo(() => {
         await patchSector({
           id: sector.sectorID,
           data: {
-            active: newActiveStatus, // FIXED: Use lowercase
+            active: newActiveStatus,
             modifyBy: getCurrentUserId()
           }
         }).unwrap();
@@ -396,7 +480,6 @@ const SectorManagement = React.memo(() => {
           text: `Sector ${newActiveStatus ? 'activated' : 'deactivated'} successfully!`
         });
 
-        // Refresh the data to ensure UI is in sync
         refetch();
       } catch (error) {
         console.error('Toggle sector status error:', error);
@@ -430,30 +513,25 @@ const SectorManagement = React.memo(() => {
     if (nameChecking) return 'Checking availability...';
     if (nameCheckError) return 'Name check unavailable';
 
-    // Use API result if available
     if (nameCheckResult) {
       return nameCheckResult.exists ? 'Sector name already exists' : 'Sector name is available';
     }
 
-    // Fallback to client-side check
     const isDuplicate = sectors.some((sector) => sector.sectorName.toLowerCase() === formData.sectorName.trim().toLowerCase());
-
     return isDuplicate ? 'Sector name already exists' : 'Sector name is available';
   }, [formData.sectorName, nameChecking, nameCheckError, nameCheckResult, sectors]);
 
   const getNameError = useCallback(() => {
     if (!formData.sectorName) return false;
 
-    // Use API result if available
     if (nameCheckResult) {
       return nameCheckResult.exists;
     }
 
-    // Fallback to client-side check
     return sectors.some((sector) => sector.sectorName.toLowerCase() === formData.sectorName.trim().toLowerCase());
   }, [formData.sectorName, nameCheckResult, sectors]);
 
-  // FIXED: Memoized statistics with correct field names
+  // Memoized statistics
   const sectorStats = useMemo(() => {
     const activeCount = sectors.filter((s) => Boolean(s.active)).length;
     const inactiveCount = sectors.filter((s) => !Boolean(s.active)).length;
@@ -466,9 +544,9 @@ const SectorManagement = React.memo(() => {
       { header: 'Sector ID', width: '100px' },
       { header: 'Sector Name', width: '200px' },
       { header: 'Status', width: '120px' },
-      { header: 'Created By', width: '120px' },
+      { header: 'Created By', width: '180px' },
       { header: 'Created Date', width: '150px' },
-      { header: 'Modified By', width: '120px' },
+      { header: 'Modified By', width: '180px' },
       { header: 'Modified Date', width: '150px' },
       { header: 'Actions', width: '150px' }
     ],
@@ -680,7 +758,7 @@ const SectorManagement = React.memo(() => {
                   }
                 }}
               >
-                <Table size="small" sx={{ minWidth: 800 }}>
+                <Table size="small" sx={{ minWidth: 1100 }}>
                   <TableHead sx={{ backgroundColor: theme.palette.primary.main }}>
                     <TableRow>
                       {tableHeaders.map((item, index) => (
@@ -711,6 +789,7 @@ const SectorManagement = React.memo(() => {
                         toggleLoading={patchingSector}
                         theme={theme}
                         formatDate={formatDate}
+                        getUserDisplay={getUserDisplay}
                       />
                     ))}
                   </TableBody>
@@ -802,12 +881,22 @@ const SectorManagement = React.memo(() => {
 
               <Box sx={{ p: 2, bgcolor: theme.palette.grey[50], borderRadius: 1 }}>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Sector Information:
+                  Audit Information:
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
                     <Typography variant="caption" display="block">
-                      Created:
+                      Created By:
+                    </Typography>
+                    <Typography variant="body2" fontWeight="medium">
+                      {editingSector.createdByUser
+                        ? `${editingSector.createdByUser.userFullName} (ID: ${editingSector.createdByUser.userID})`
+                        : `User ${editingSector.createdBy || 'System'}`}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" display="block">
+                      Created Date:
                     </Typography>
                     <Typography variant="body2" fontWeight="medium">
                       {formatDate(editingSector.createdDT)}
@@ -815,7 +904,19 @@ const SectorManagement = React.memo(() => {
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="caption" display="block">
-                      Last Modified:
+                      Last Modified By:
+                    </Typography>
+                    <Typography variant="body2" fontWeight="medium">
+                      {editingSector.modifiedByUser
+                        ? `${editingSector.modifiedByUser.userFullName} (ID: ${editingSector.modifiedByUser.userID})`
+                        : editingSector.modifyBy
+                          ? `User ${editingSector.modifyBy}`
+                          : 'Never modified'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" display="block">
+                      Last Modified Date:
                     </Typography>
                     <Typography variant="body2" fontWeight="medium">
                       {editingSector.modifyDT ? formatDate(editingSector.modifyDT) : 'Never'}

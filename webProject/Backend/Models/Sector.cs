@@ -18,10 +18,16 @@ namespace Backend.Models
         
         public DateTime CreatedDT { get; set; } = DateTime.Now;
         
-        // Make CreatedBy nullable or provide default value
         public int? CreatedBy { get; set; } = 1; // Default to user 1
         
         public DateTime? ModifyDT { get; set; }
         public int? ModifyBy { get; set; }
+
+        // Navigation properties
+        [ForeignKey("CreatedBy")]
+        public virtual User? CreatedByUser { get; set; }
+
+        [ForeignKey("ModifyBy")]
+        public virtual User? ModifiedByUser { get; set; }
     }
 }

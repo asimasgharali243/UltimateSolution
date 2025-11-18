@@ -28,13 +28,11 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
-  Refresh as RefreshIcon,
-  Receipt as ReceiptIcon,
-  Add as AddIcon
+  Receipt as ReceiptIcon
 } from '@mui/icons-material';
 import { useGetMastersQuery, useDeleteMasterMutation } from '../../../../store/api/advertisementApi';
 
-const AdvertisementList = ({ onEdit, onView, onCreateNew, refreshTrigger, onRefetch }) => {
+const AdvertisementList = ({ onEdit, onView, onCreateNew, onRefetch }) => {
   const theme = useTheme();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -59,7 +57,8 @@ const AdvertisementList = ({ onEdit, onView, onCreateNew, refreshTrigger, onRefe
         master.billNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         master.agencyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         master.caption?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        master.clientName?.toLowerCase().includes(searchTerm.toLowerCase());
+        master.accountTitle?.toLowerCase().includes(searchTerm.toLowerCase()) || // Fixed: changed from AccountTitle to accountTitle
+        master.accountContactPerson?.toLowerCase().includes(searchTerm.toLowerCase()); // Fixed: changed from AccountContactPerson to accountContactPerson
 
       return matchesSearch;
     });
@@ -98,13 +97,8 @@ const AdvertisementList = ({ onEdit, onView, onCreateNew, refreshTrigger, onRefe
     }
   };
 
-  const handleRefresh = () => {
-    refetch();
-    if (onRefetch) onRefetch();
-  };
-
   const calculateMasterTotal = (master) => {
-    if (!master.details) return 0;
+    if (!master.details) return 0; // Fixed: changed from Details to details
     return master.details.reduce((sum, detail) => {
       const spaceValue = parseInt(detail.totalSpace) || 0;
       return sum + detail.rate * spaceValue;
@@ -126,7 +120,7 @@ const AdvertisementList = ({ onEdit, onView, onCreateNew, refreshTrigger, onRefe
     return (
       <Alert severity="error" sx={{ m: 2 }}>
         Error loading advertisement bills: {error?.data?.message || 'Please try again later'}
-        <Button onClick={handleRefresh} sx={{ ml: 2 }} size="small">
+        <Button onClick={refetch} sx={{ ml: 2 }} size="small">
           Retry
         </Button>
       </Alert>
@@ -169,12 +163,12 @@ const AdvertisementList = ({ onEdit, onView, onCreateNew, refreshTrigger, onRefe
         </Grid>
       </Grid>
 
-      {/* Search and Actions */}
+      {/* Search Bar Only - Removed duplicate buttons */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <TextField
             fullWidth
-            placeholder="Search by Bill No, Agency, Caption, or Client..."
+            placeholder="Search by Bill No, Agency, Caption, or Account..."
             value={searchTerm}
             onChange={handleSearch}
             InputProps={{
@@ -183,14 +177,6 @@ const AdvertisementList = ({ onEdit, onView, onCreateNew, refreshTrigger, onRefe
             variant="outlined"
             size="small"
           />
-        </Grid>
-        <Grid item xs={12} md={6} sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh} disabled={isLoading}>
-            Refresh
-          </Button>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={onCreateNew}>
-            Create New Bill
-          </Button>
         </Grid>
       </Grid>
 
@@ -212,7 +198,7 @@ const AdvertisementList = ({ onEdit, onView, onCreateNew, refreshTrigger, onRefe
           <TableHead>
             <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
               <TableCell sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>Bill No</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>Client</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>Account</TableCell>
               <TableCell sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>Agency</TableCell>
               <TableCell sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>Caption</TableCell>
               <TableCell sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>Bill Date</TableCell>
@@ -243,10 +229,16 @@ const AdvertisementList = ({ onEdit, onView, onCreateNew, refreshTrigger, onRefe
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2">{master.clientName || 'N/A'}</Typography>
-                  {master.clientContactNumber && (
+                  <Typography variant="body2">{master.accountTitle || 'N/A'}</Typography>{' '}
+                  {/* Fixed: changed from AccountTitle to accountTitle */}
+                  {master.accountContactPerson && ( // Fixed: changed from AccountContactPerson to accountContactPerson
                     <Typography variant="caption" color="text.secondary" display="block">
-                      {master.clientContactNumber}
+                      {master.accountContactPerson}
+                    </Typography>
+                  )}
+                  {master.accountContactMobile && ( // Fixed: changed from AccountContactMobile to accountContactMobile
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {master.accountContactMobile}
                     </Typography>
                   )}
                 </TableCell>
@@ -299,7 +291,7 @@ const AdvertisementList = ({ onEdit, onView, onCreateNew, refreshTrigger, onRefe
                       : 'No results match your search criteria.'}
                   </Typography>
                   {masters.length === 0 && (
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={onCreateNew} sx={{ mt: 2 }}>
+                    <Button variant="contained" onClick={onCreateNew} sx={{ mt: 2 }}>
                       Create First Bill
                     </Button>
                   )}

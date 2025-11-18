@@ -29,7 +29,8 @@ import {
   DialogContent,
   DialogActions,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Avatar
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
@@ -40,7 +41,8 @@ import {
   Print as PrintIcon,
   Email as EmailIcon,
   Hotel as HotelIcon,
-  Star as StarIcon
+  Star as StarIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 
 // Import API hooks
@@ -88,6 +90,13 @@ const HotelManagement = () => {
   const [createHotel, { isLoading: creatingHotel }] = useCreateHotelMutation();
   const [updateHotel, { isLoading: updatingHotel }] = useUpdateHotelMutation();
   const [deleteHotel, { isLoading: deletingHotel }] = useDeleteHotelMutation();
+
+  // Debug logging
+  useEffect(() => {
+    if (!hotelsLoading && hotelsData) {
+      console.log('Hotels Data:', hotelsData);
+    }
+  }, [hotelsData, hotelsLoading]);
 
   // Load cities and hotels from API
   useEffect(() => {
@@ -333,6 +342,22 @@ const HotelManagement = () => {
     }
   };
 
+  // Format date with time
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '-';
+    try {
+      return new Date(dateString).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return '-';
+    }
+  };
+
   // Get hotels count by city
   const getHotelsCountByCity = (cityName) => {
     return hotels.filter((hotel) => hotel.cityName === cityName).length;
@@ -375,6 +400,44 @@ const HotelManagement = () => {
           <StarIcon key={i} sx={{ fontSize: 16, color: theme.palette.warning.main }} />
         ))}
       </Box>
+    );
+  };
+
+  // User avatar with tooltip - CORRECTED PROPERTY NAMES
+  const renderUserWithAvatar = (userName, userId, isModified = false) => {
+    if (!userName || userName === 'Unknown' || (isModified && !userName)) {
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.grey[400] }}>
+            <PersonIcon sx={{ fontSize: 18 }} />
+          </Avatar> */}
+          <Typography variant="body2" color="text.secondary">
+            {isModified ? 'Not Modified' : 'Unknown'}
+          </Typography>
+        </Box>
+      );
+    }
+
+    return (
+      <Tooltip title={`User ID: ${userId}`} arrow>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main, fontSize: '0.875rem' }}>
+            {userName
+              .split(' ')
+              .map((n) => n[0])
+              .join('')
+              .toUpperCase()}
+          </Avatar> */}
+          <Box>
+            <Typography variant="body2" fontWeight="medium">
+              {userName}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              ID: {userId}
+            </Typography>
+          </Box>
+        </Box>
+      </Tooltip>
     );
   };
 
@@ -582,18 +645,18 @@ const HotelManagement = () => {
                   }
                 }}
               >
-                <Table size="small" sx={{ minWidth: 900 }}>
+                <Table size="small" sx={{ minWidth: 1200 }}>
                   <TableHead sx={{ backgroundColor: theme.palette.primary.main }}>
                     <TableRow>
                       {[
-                        { header: 'Hotel ID', width: '100px' },
-                        { header: 'Hotel Name', width: '200px' },
-                        { header: 'Hotel Type', width: '150px' },
-                        { header: 'City', width: '120px' },
-                        { header: 'Created By', width: '100px' },
-                        { header: 'Created Date', width: '130px' },
-                        { header: 'Modified By', width: '100px' },
-                        { header: 'Modified Date', width: '130px' },
+                        { header: 'Hotel ID', width: '80px' },
+                        { header: 'Hotel Name', width: '180px' },
+                        { header: 'Hotel Type', width: '140px' },
+                        { header: 'City', width: '100px' },
+                        { header: 'Created By', width: '150px' },
+                        { header: 'Created Date', width: '150px' },
+                        { header: 'Modified By', width: '150px' },
+                        { header: 'Modified Date', width: '150px' },
                         { header: 'Status', width: '100px' },
                         { header: 'Actions', width: '120px' }
                       ].map((item, index) => (
@@ -660,17 +723,18 @@ const HotelManagement = () => {
                             sx={{ fontWeight: 'bold' }}
                           />
                         </TableCell>
+                        {/* CORRECTED: Using actual property names from API response */}
+                        <TableCell sx={tableCellStyles}>{renderUserWithAvatar(hotel.createdByName, hotel.createdBy)}</TableCell>
                         <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">User {hotel.createdBy}</Typography>
+                          <Tooltip title={formatDateTime(hotel.createdDT)} arrow>
+                            <Typography variant="body2">{formatDate(hotel.createdDT)}</Typography>
+                          </Tooltip>
                         </TableCell>
+                        <TableCell sx={tableCellStyles}>{renderUserWithAvatar(hotel.modifiedByName, hotel.modifyBy, true)}</TableCell>
                         <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{formatDate(hotel.createdDT)}</Typography>
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{hotel.modifyBy ? `User ${hotel.modifyBy}` : '-'}</Typography>
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{formatDate(hotel.modifyDT)}</Typography>
+                          <Tooltip title={hotel.modifyDT ? formatDateTime(hotel.modifyDT) : 'Never modified'} arrow>
+                            <Typography variant="body2">{hotel.modifyDT ? formatDate(hotel.modifyDT) : '-'}</Typography>
+                          </Tooltip>
                         </TableCell>
                         <TableCell sx={tableCellStyles}>
                           <Chip
@@ -738,7 +802,7 @@ const HotelManagement = () => {
         </Card>
       </Paper>
 
-      {/* Edit Hotel Dialog */}
+      {/* Edit Hotel Dialog - CORRECTED PROPERTY NAMES */}
       <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle
           sx={{
@@ -826,15 +890,27 @@ const HotelManagement = () => {
                   </Typography>
                   <Grid container spacing={1}>
                     <Grid item xs={6}>
-                      <Typography variant="caption">Created:</Typography>
+                      <Typography variant="caption">Created By:</Typography>
                       <Typography variant="body2" fontWeight="medium">
-                        {formatDate(editingHotel.createdDT)}
+                        {editingHotel.createdByName || 'Unknown'}
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="caption">Last Modified:</Typography>
+                      <Typography variant="caption">Created Date:</Typography>
                       <Typography variant="body2" fontWeight="medium">
-                        {editingHotel.modifyDT ? formatDate(editingHotel.modifyDT) : 'Never'}
+                        {formatDateTime(editingHotel.createdDT)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption">Last Modified By:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {editingHotel.modifiedByName || 'Never'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption">Last Modified Date:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {editingHotel.modifyDT ? formatDateTime(editingHotel.modifyDT) : 'Never'}
                       </Typography>
                     </Grid>
                   </Grid>

@@ -47,8 +47,19 @@ namespace Backend.Data
         public DbSet<Master> Masters { get; set; }
         public DbSet<Detail> Details { get; set; }
 
-        // AUTOMATIC AUDIT METHODS
+        public DbSet<Account> Accounts { get; set; }
+        public DbSet<ItemGroup> ItemGroups { get; set; }
+        public DbSet<ItemCategory> ItemCategories { get; set; }
 
+   public DbSet<Item> Items { get; set; }
+ public DbSet<ItemUnit> ItemUnits { get; set; }
+        public DbSet<Level1> Level1 { get; set; }
+        public DbSet<Level2> Level2 { get; set; }
+        public DbSet<Level3> Level3 { get; set; }
+        public DbSet<Level4> Level4 { get; set; }
+        // AUTOMATIC AUDIT METHODS
+ public DbSet<PurchaseMaster> PurchaseMasters { get; set; }
+        public DbSet<PurchaseDetail> PurchaseDetails { get; set; }
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             var auditEntries = OnBeforeSaveChanges();
@@ -473,25 +484,20 @@ namespace Backend.Data
                 entity.Property(e => e.roNo).IsRequired(false);
                 entity.Property(e => e.roDate).IsRequired(false);
                 entity.Property(e => e.Notes).IsRequired(false);
-                entity.Property(e => e.clientID).IsRequired(false);
+                entity.Property(e => e.accountID).IsRequired(false);
                 entity.Property(e => e.agencyName).IsRequired(false);
                 entity.Property(e => e.pID).IsRequired(false);
                 entity.Property(e => e.caption).IsRequired(false);
                 
-                // REMOVED: Don't configure non-nullable int properties as optional
-                // entity.Property(e => e.frontPageExtra).IsRequired(false); // REMOVE THIS
-                // entity.Property(e => e.backPageExtra).IsRequired(false);  // REMOVE THIS
-                // entity.Property(e => e.comission).IsRequired(false);      // REMOVE THIS
+                // Set default values for non-nullable int properties
+                entity.Property(e => e.frontPageExtra).HasDefaultValue(0);
+                entity.Property(e => e.backPageExtra).HasDefaultValue(0);
+                entity.Property(e => e.comission).HasDefaultValue(0);
                 
                 entity.Property(e => e.createdBy).IsRequired(false);
                 entity.Property(e => e.createdDT).IsRequired(false);
                 entity.Property(e => e.modifyBy).IsRequired(false);
                 entity.Property(e => e.modifyDT).IsRequired(false);
-
-                // Set default values for non-nullable int properties
-                entity.Property(e => e.frontPageExtra).HasDefaultValue(0);
-                entity.Property(e => e.backPageExtra).HasDefaultValue(0);
-                entity.Property(e => e.comission).HasDefaultValue(0);
             });
 
             // Detail configuration
@@ -521,6 +527,125 @@ namespace Backend.Data
                       .HasForeignKey(d => d.masterID)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
+            modelBuilder.Entity<Account>(entity =>
+            {
+                entity.HasKey(e => e.accountID);
+                entity.Property(e => e.accountID)
+                        .ValueGeneratedOnAdd();
+                entity.HasOne(a => a.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(a => a.createdBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+                    
+                entity.HasOne(a => a.ModifiedByUser)
+                    .WithMany()
+                    .HasForeignKey(a => a.modifyBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<ItemGroup>(entity =>
+            {
+                entity.HasKey(e => e.GroupID);
+                
+                entity.HasOne(ig => ig.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(ig => ig.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(ig => ig.ModifiedByUser)
+                    .WithMany()
+                    .HasForeignKey(ig => ig.ModifyBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // ItemCategory configuration - FIXED: Moved inside OnModelCreating method
+            modelBuilder.Entity<ItemCategory>(entity =>
+            {
+                entity.HasKey(e => e.CategoryID);
+                
+                // Relationship with ItemGroup
+                entity.HasOne(ic => ic.ItemGroup)
+                    .WithMany()
+                    .HasForeignKey(ic => ic.GroupID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Relationship with CreatedByUser
+                entity.HasOne(ic => ic.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(ic => ic.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Relationship with ModifiedByUser
+                entity.HasOne(ic => ic.ModifiedByUser)
+                    .WithMany()
+                    .HasForeignKey(ic => ic.ModifyBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+  modelBuilder.Entity<Item>().ToTable("tblItem");
+            modelBuilder.Entity<ItemGroup>().ToTable("tblItemGroup");
+            modelBuilder.Entity<ItemCategory>().ToTable("tblItemCategory");
+                modelBuilder.Entity<ItemUnit>(entity =>
+    {
+        entity.ToTable("tblItemUnit");
+        entity.HasKey(e => e.UnitID);
+        
+        entity.Property(e => e.UnitName)
+            .IsRequired()
+            .HasMaxLength(50);
+            
+        // Relationships with Users
+        entity.HasOne(iu => iu.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(iu => iu.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasOne(iu => iu.ModifiedByUser)
+            .WithMany()
+            .HasForeignKey(iu => iu.ModifyBy)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+
+            modelBuilder.Entity<Level1>().ToTable("tbl_Level1");
+            modelBuilder.Entity<Level2>().ToTable("tbl_Level2");
+            modelBuilder.Entity<Level3>().ToTable("tbl_Level3");
+            modelBuilder.Entity<Level4>().ToTable("tbl_Level4");
+            modelBuilder.Entity<User>().ToTable("tblUser");
+ 
+  
+   modelBuilder.Entity<PurchaseMaster>()
+                .HasMany(pm => pm.PurchaseDetails)
+                .WithOne(pd => pd.PurchaseMaster)
+                .HasForeignKey(pd => pd.masterID) // Changed to masterID (camelCase)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Map PurchaseMaster to tblPurchaseMaster
+            modelBuilder.Entity<PurchaseMaster>(entity =>
+            {
+                entity.ToTable("tblPurchaseMaster");
+                entity.HasKey(e => e.masterID);
+                
+                // Configure relationships
+                entity.HasOne(p => p.Account)
+                      .WithMany()
+                      .HasForeignKey(p => p.accountID);
+                
+                entity.HasMany(p => p.PurchaseDetails)
+                      .WithOne(pd => pd.PurchaseMaster)
+                      .HasForeignKey(pd => pd.masterID);
+            });
+              // Map PurchaseDetail to tblPurchaseDetail
+            modelBuilder.Entity<PurchaseDetail>(entity =>
+            {
+                entity.ToTable("tblPurchaseDetail");
+                entity.HasKey(e => e.id);
+                
+                // Configure relationships
+                entity.HasOne(pd => pd.Item)
+                      .WithMany()
+                      .HasForeignKey(pd => pd.itemID);
+            });
+  
         }
     }
 }

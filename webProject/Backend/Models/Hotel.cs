@@ -8,21 +8,27 @@ namespace Backend.Models
     public class Hotel
     {
         [Key]
-        public int hotelID{ get; set; }
+        public int hotelID { get; set; }
 
         [Required]
         [StringLength(250)]
         public string hotelName { get; set; } = string.Empty;
         
         public string hotalType { get; set; } = string.Empty;
-        public int cityID{ get; set; }
+        public int cityID { get; set; }
         public int CreatedBy { get; set; }
         public DateTime CreatedDT { get; set; } = DateTime.Now;
         public int? ModifyBy { get; set; }
         public DateTime? ModifyDT { get; set; }
 
-        // Navigation property
+        // Navigation properties
         [ForeignKey("cityID")]
         public virtual City? City { get; set; }
+
+        [ForeignKey("CreatedBy")]
+        public virtual User? CreatedByUser { get; set; }
+
+        [ForeignKey("ModifyBy")]
+        public virtual User? ModifiedByUser { get; set; }
     }
 }

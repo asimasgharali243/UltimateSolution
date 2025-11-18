@@ -24,7 +24,8 @@ import {
   DialogContent,
   DialogActions,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Avatar
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
@@ -34,7 +35,8 @@ import {
   Save as SaveIcon,
   Print as PrintIcon,
   Email as EmailIcon,
-  Inventory as PackageIcon
+  Inventory as PackageIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import {
   useGetPackagesQuery,
@@ -63,8 +65,13 @@ const PackageManagement = () => {
   const [createPackage, { isLoading: creating }] = useCreatePackageMutation();
   const [updatePackage, { isLoading: updating }] = useUpdatePackageMutation();
   const [deletePackage, { isLoading: deleting }] = useDeletePackageMutation();
-
-  isLoading ? null : console.log('records', packages);
+  isLoading ? null : console.log(packages);
+  // Debug logging
+  useEffect(() => {
+    if (!isLoading && packages) {
+      console.log('Packages Data:', packages);
+    }
+  }, [packages, isLoading]);
 
   // Lazy validation queries
   const [checkName, { isLoading: nameChecking }] = useLazyCheckPackageNameExistsQuery();
@@ -240,6 +247,22 @@ const PackageManagement = () => {
     }
   };
 
+  // Format date with time
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '-';
+    try {
+      return new Date(dateString).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return '-';
+    }
+  };
+
   // Get chip color based on package title
   const getPackageColor = (packageTitle) => {
     if (!packageTitle) return 'default';
@@ -255,18 +278,33 @@ const PackageManagement = () => {
     return 'default';
   };
 
-  // Display user name
-  const getUserDisplayName = (userId) => {
-    if (!userId) return '-';
-
-    // Get current user ID from auth state
-    const currentUserId = user?.userID || user?.userId;
-
-    if (currentUserId && currentUserId === userId) {
-      return 'You';
+  // User avatar with tooltip
+  const renderUserWithAvatar = (userName, userId, isModified = false) => {
+    // Handle case where userName or userId is missing
+    if (!userName || userName === 'Unknown' || (isModified && !userName)) {
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            {isModified ? 'Not Modified' : 'Unknown'}
+          </Typography>
+        </Box>
+      );
     }
 
-    return `User ${userId}`;
+    return (
+      <Tooltip title={`User ID: ${userId}`} arrow>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box>
+            <Typography variant="body2" fontWeight="medium">
+              {userName}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              ID: {userId}
+            </Typography>
+          </Box>
+        </Box>
+      </Tooltip>
+    );
   };
 
   // Table cell styles
@@ -424,18 +462,18 @@ const PackageManagement = () => {
                   }
                 }}
               >
-                <Table size="small" sx={{ minWidth: 800 }}>
+                <Table size="small" sx={{ minWidth: 1000 }}>
                   <TableHead sx={{ backgroundColor: theme.palette.primary.main }}>
                     <TableRow>
                       {[
-                        { header: 'Package ID', width: '120px' },
-                        { header: 'Package Title', width: '250px' },
-                        { header: 'Package Type', width: '150px' },
-                        { header: 'Created By', width: '120px' },
+                        { header: 'Package ID', width: '100px' },
+                        { header: 'Package Title', width: '200px' },
+                        { header: 'Package Type', width: '120px' },
+                        { header: 'Created By', width: '150px' },
                         { header: 'Created Date', width: '150px' },
-                        { header: 'Modified By', width: '120px' },
+                        { header: 'Modified By', width: '150px' },
                         { header: 'Modified Date', width: '150px' },
-                        { header: 'Status', width: '120px' },
+                        { header: 'Status', width: '100px' },
                         { header: 'Actions', width: '120px' }
                       ].map((item, index) => (
                         <TableCell
@@ -482,18 +520,17 @@ const PackageManagement = () => {
                             sx={{ fontWeight: 'bold', minWidth: '80px' }}
                           />
                         </TableCell>
+                        <TableCell sx={tableCellStyles}>{renderUserWithAvatar(pkg.createdByName, pkg.createdBy)}</TableCell>
                         <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{getUserDisplayName(pkg.createdBy)}</Typography> {/* Changed to match backend */}
+                          <Tooltip title={formatDateTime(pkg.createdDT)} arrow>
+                            <Typography variant="body2">{formatDate(pkg.createdDT)}</Typography>
+                          </Tooltip>
                         </TableCell>
+                        <TableCell sx={tableCellStyles}>{renderUserWithAvatar(pkg.modifiedByName, pkg.modifyBy, true)}</TableCell>
                         <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{formatDate(pkg.createdDT)}</Typography> {/* Changed to match backend */}
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{pkg.modifyBy ? getUserDisplayName(pkg.modifyBy) : '-'}</Typography>{' '}
-                          {/* Changed to match backend */}
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{formatDate(pkg.modifyDT)}</Typography> {/* Changed to match backend */}
+                          <Tooltip title={pkg.modifyDT ? formatDateTime(pkg.modifyDT) : 'Never modified'} arrow>
+                            <Typography variant="body2">{pkg.modifyDT ? formatDate(pkg.modifyDT) : '-'}</Typography>
+                          </Tooltip>
                         </TableCell>
                         <TableCell sx={tableCellStyles}>
                           <Chip
@@ -617,18 +654,27 @@ const PackageManagement = () => {
                   </Typography>
                   <Grid container spacing={1}>
                     <Grid item xs={6}>
-                      <Typography variant="caption">Created:</Typography>
+                      <Typography variant="caption">Created By:</Typography>
                       <Typography variant="body2" fontWeight="medium">
-                        {formatDate(editingPackage.createdDT)} by {getUserDisplayName(editingPackage.createdBy)}{' '}
-                        {/* Changed to match backend */}
+                        {editingPackage.createdByName || 'Unknown'}
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="caption">Last Modified:</Typography>
+                      <Typography variant="caption">Created Date:</Typography>
                       <Typography variant="body2" fontWeight="medium">
-                        {editingPackage.modifyDT
-                          ? `${formatDate(editingPackage.modifyDT)} by ${getUserDisplayName(editingPackage.modifyBy)}` /* Changed to match backend */
-                          : 'Never'}
+                        {formatDateTime(editingPackage.createdDT)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption">Last Modified By:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {editingPackage.modifiedByName || 'Never'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption">Last Modified Date:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {editingPackage.modifyDT ? formatDateTime(editingPackage.modifyDT) : 'Never'}
                       </Typography>
                     </Grid>
                   </Grid>

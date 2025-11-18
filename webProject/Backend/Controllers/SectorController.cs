@@ -50,19 +50,32 @@ namespace Backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Sector>>> GetSectors()
         {
-            return await _context.Sectors.OrderByDescending(s => s.CreatedDT).ToListAsync();
+            return await _context.Sectors
+                .Include(s => s.CreatedByUser)    // Include CreatedByUser
+                .Include(s => s.ModifiedByUser)   // Include ModifiedByUser
+                .OrderByDescending(s => s.CreatedDT)
+                .ToListAsync();
         }
 
         [HttpGet("active")]
         public async Task<ActionResult<IEnumerable<Sector>>> GetActiveSectors()
         {
-            return await _context.Sectors.Where(s => s.Active).OrderByDescending(s => s.CreatedDT).ToListAsync();
+            return await _context.Sectors
+                .Include(s => s.CreatedByUser)    // Include CreatedByUser
+                .Include(s => s.ModifiedByUser)   // Include ModifiedByUser
+                .Where(s => s.Active)
+                .OrderByDescending(s => s.CreatedDT)
+                .ToListAsync();
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Sector>> GetSector(int id)
         {
-            var sector = await _context.Sectors.FindAsync(id);
+            var sector = await _context.Sectors
+                .Include(s => s.CreatedByUser)    // Include CreatedByUser
+                .Include(s => s.ModifiedByUser)   // Include ModifiedByUser
+                .FirstOrDefaultAsync(s => s.sectorID == id);
+                
             if (sector == null) return NotFound();
             return sector;
         }
@@ -80,10 +93,15 @@ namespace Backend.Controllers
 
             sector.CreatedDT = System.DateTime.Now;
             // Ensure Active is properly set (handle null/undefined from frontend)
-            sector.Active = sector.Active; // This will use the value from frontend
+            sector.Active = sector.Active;
 
             _context.Sectors.Add(sector);
             await _context.SaveChangesAsync();
+
+            // Load the user details for response
+            await _context.Entry(sector)
+                .Reference(s => s.CreatedByUser)
+                .LoadAsync();
 
             return CreatedAtAction("GetSector", new { id = sector.sectorID }, sector);
         }
@@ -136,7 +154,11 @@ namespace Backend.Controllers
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchSector(int id, [FromBody] SectorUpdateDto updateDto)
         {
-            var sector = await _context.Sectors.FindAsync(id);
+            var sector = await _context.Sectors
+                .Include(s => s.CreatedByUser)    // Include for response
+                .Include(s => s.ModifiedByUser)   // Include for response
+                .FirstOrDefaultAsync(s => s.sectorID == id);
+                
             if (sector == null) return NotFound();
 
             // Update provided fields
@@ -175,7 +197,11 @@ namespace Backend.Controllers
                 await _context.SaveChangesAsync();
                 
                 // Return the updated sector to ensure frontend has correct data
-                var updatedSector = await _context.Sectors.FindAsync(id);
+                var updatedSector = await _context.Sectors
+                    .Include(s => s.CreatedByUser)
+                    .Include(s => s.ModifiedByUser)
+                    .FirstOrDefaultAsync(s => s.sectorID == id);
+                    
                 return Ok(updatedSector);
             }
             catch (DbUpdateException ex)

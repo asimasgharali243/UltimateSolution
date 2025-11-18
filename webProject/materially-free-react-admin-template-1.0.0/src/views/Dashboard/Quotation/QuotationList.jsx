@@ -75,9 +75,12 @@ const QuotationList = ({
     (quotation) =>
       quotation.quotation_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       quotation.traveling_details?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quotation.reference_by?.toLowerCase().includes(searchTerm.toLowerCase())
+      quotation.reference_by?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (quotation.Client?.FullName && quotation.Client.FullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (quotation.Client?.ContactNumber && quotation.Client.ContactNumber.includes(searchTerm))
   );
 
+  console.log('Filtered Quotations:', filteredQuotations);
   // Delete handlers
   const handleDeleteClick = (quotation) => {
     setQuotationToDelete(quotation);
@@ -166,7 +169,7 @@ const QuotationList = ({
           {/* Search */}
           <TextField
             fullWidth
-            placeholder="Search quotations by number, traveling details, or reference..."
+            placeholder="Search quotations by number, traveling details, reference, or client name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -188,7 +191,7 @@ const QuotationList = ({
             <Table size="small">
               <TableHead sx={{ backgroundColor: theme.palette.primary.main }}>
                 <TableRow>
-                  {['Quotation Info', 'Client ID', 'Trip Details', 'Passengers', 'Financial Summary', 'Status', 'Created', 'Actions'].map(
+                  {['Quotation Info', 'Client Name', 'Trip Details', 'Passengers', 'Financial Summary', 'Status', 'Created', 'Actions'].map(
                     (header, index) => (
                       <TableCell key={index} sx={{ color: 'white', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                         {header}
@@ -225,9 +228,34 @@ const QuotationList = ({
                       </Box>
                     </TableCell>
 
-                    {/* Client ID */}
+                    {/* Client Details */}
                     <TableCell>
-                      <Typography variant="body2">{quotation.client_id}</Typography>
+                      {quotation.client ? (
+                        <Box>
+                          <Typography variant="body2" fontWeight="bold">
+                            {quotation.client.fullName || 'N/A'}
+                          </Typography>
+                          {quotation.client.contactNumber && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              📞 {quotation.client.contactNumber}
+                            </Typography>
+                          )}
+                          {quotation.client.whatsappNumber && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              💬 {quotation.client.whatsappNumber}
+                            </Typography>
+                          )}
+                          {quotation.client.cityOfResidence && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              📍 {quotation.client.cityOfResidence}
+                            </Typography>
+                          )}
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          {quotation.client_id}
+                        </Typography>
+                      )}
                     </TableCell>
 
                     {/* Trip Details */}
@@ -339,6 +367,11 @@ const QuotationList = ({
             Are you sure you want to delete the quotation <strong>{quotationToDelete?.quotation_number}</strong>? This action cannot be
             undone.
           </Typography>
+          {quotationToDelete?.Client && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Client: {quotationToDelete.Client.FullName}
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeleteCancel}>Cancel</Button>

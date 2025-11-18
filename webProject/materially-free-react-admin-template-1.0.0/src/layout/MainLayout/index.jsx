@@ -70,8 +70,13 @@ const MainLayout = () => {
         <Box sx={theme.mixins.toolbar} />
         <OutletDiv>
           <Outlet />
-                <Box sx={{mt:5}} > Distributed by <a href='https://themewagon.com' target='_blank'>ThemeWagon</a></Box>
-
+          <Box sx={{ mt: 5 }} style={{ textAlign: 'center' }}>
+            {' '}
+            Developed By{' '}
+            <a href="https://ultsol.biz" target="_blank">
+              Ultimate Solution
+            </a>
+          </Box>
         </OutletDiv>
       </Main>
     </Box>

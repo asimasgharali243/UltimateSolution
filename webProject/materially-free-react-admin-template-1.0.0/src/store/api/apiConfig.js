@@ -138,17 +138,32 @@ export const CLIENT_ENDPOINTS = {
   SEARCH: (term) => `/Client/search?term=${term}`
 };
 
+// export const USER_RIGHTS_ENDPOINTS = {
+//   USERS: '/userrights/users',
+//   FORMS: '/userrights/forms',
+//   USER_RIGHTS: '/userrights/user',
+//   CURRENT_USER_RIGHTS: '/userrights/currentuser',
+//   CURRENT_USER_PERMISSIONS: '/userrights/currentuser/permissions',
+//   BULK_SAVE: '/userrights/bulk',
+//   HAS_PERMISSION: '/userrights/haspermission',
+//   FORM_PERMISSIONS: '/userrights/formpermissions',
+//   USER_FORMS: '/userrights/userforms',
+//   USER_FORM_BY_ID: (id) => `/userrights/userforms/${id}`,
+// };
+
+
+// USER RIGHTS ENDPOINTS - CORRECTED to match your backend
 export const USER_RIGHTS_ENDPOINTS = {
-  USERS: '/userrights/users',
-  FORMS: '/userrights/forms',
-  USER_RIGHTS: '/userrights/user',
-  CURRENT_USER_RIGHTS: '/userrights/currentuser',
-  CURRENT_USER_PERMISSIONS: '/userrights/currentuser/permissions',
-  BULK_SAVE: '/userrights/bulk',
-  HAS_PERMISSION: '/userrights/haspermission',
-  FORM_PERMISSIONS: '/userrights/formpermissions',
-  USER_FORMS: '/userrights/userforms',
-  USER_FORM_BY_ID: (id) => `/userrights/userforms/${id}`,
+  USERS: '/UserRights/Users',
+  FORMS: '/UserRights/Forms',
+  USER_RIGHTS: '/UserRights/User', // Note: This is /User/{userId} not /User?userId={userId}
+  CURRENT_USER_RIGHTS: '/UserRights/CurrentUser',
+  CURRENT_USER_PERMISSIONS: '/UserRights/CurrentUser/Permissions',
+  BULK_SAVE: '/UserRights/Bulk',
+  HAS_PERMISSION: '/UserRights/HasPermission',
+  FORM_PERMISSIONS: '/UserRights/FormPermissions',
+  TEST_CONNECTION: '/UserRights/TestConnection',
+  CHECK_DATA: '/UserRights/CheckData'
 };
 
 // apiConfig.js - Add Master endpoints
@@ -164,6 +179,7 @@ export const MASTER_ENDPOINTS = {
     excludeId ? `/master/check-vno/${vNo}?excludeId=${excludeId}` : `/master/check-vno/${vNo}`
 };
 
+// src/store/api/apiConfig.js
 export const ADVERTISEMENT_ENDPOINTS = {
   // Master endpoints
   GET_ALL_MASTERS: '/Advertisement/masters',
@@ -175,7 +191,71 @@ export const ADVERTISEMENT_ENDPOINTS = {
     excludeId ? `/Advertisement/masters/check-vno/${vNo}?excludeId=${excludeId}` 
               : `/Advertisement/masters/check-vno/${vNo}`,
   
-  // Client endpoints
-  GET_ALL_CLIENTS: '/Advertisement/clients',
-  SEARCH_CLIENTS: (term) => `/Advertisement/clients/search?term=${term}`
+  // Account endpoints
+  GET_ALL_ACCOUNTS: '/Advertisement/accounts',
+  SEARCH_ACCOUNTS: (term) => `/Advertisement/accounts/search?term=${term}`
+};
+
+// src/store/api/apiConfig.js - Add account endpoints
+export const ACCOUNT_ENDPOINTS = {
+  GET_ALL: '/account',
+  GET_BY_ID: (id) => `/account/${id}`,
+  CHECK_NAME: (accountTitle) => `/account/check-name/${encodeURIComponent(accountTitle)}`,
+  CREATE: '/account',
+  UPDATE: (id) => `/account/${id}`,
+  DELETE: (id) => `/account/${id}`,
+};
+
+// Add to your existing apiConfig.js
+export const ITEM_CATEGORY_ENDPOINTS = {
+  GET_ALL: '/itemcategory',
+  GET_BY_ID: (id) => `/itemcategory/${id}`,
+  GET_BY_GROUP: (groupId) => `/itemcategory/by-group/${groupId}`,
+  CHECK_CODE: (categoryCode) => `/itemcategory/check-code/${categoryCode}`,
+  CREATE: '/itemcategory',
+  UPDATE: (id) => `/itemcategory/${id}`,
+  DELETE: (id) => `/itemcategory/${id}`,
+};
+
+
+
+
+// Item Management Endpoints
+export const ITEM_ENDPOINTS = {
+  GET_ALL: '/Item',
+  GET_BY_ID: (id) => `/Item/${id}`,
+  CREATE: '/Item',
+  UPDATE: (id) => `/Item/${id}`,
+  DELETE: (id) => `/Item/${id}`,
+  CHECK_CODE: (itemCode) => `/Item/check-code/${itemCode}`,
+};
+
+export const ITEM_GROUP_ENDPOINTS = {
+  GET_ALL: '/ItemGroup',
+  GET_BY_ID: (id) => `/ItemGroup/${id}`,
+  DROPDOWN: '/ItemGroup/dropdown',
+  CHECK_CODE: (groupCode) => `/ItemGroup/check-code/${groupCode}`,
+  CREATE: '/ItemGroup',
+  UPDATE: (id) => `/ItemGroup/${id}`,
+  DELETE: (id) => `/ItemGroup/${id}`,
+};
+
+
+export const ITEM_UNIT_ENDPOINTS = {
+  GET_ALL: '/ItemUnit',
+  GET_BY_ID: (id) => `/ItemUnit/${id}`,
+  DROPDOWN: '/ItemUnit/dropdown',
+  CREATE: '/ItemUnit',
+  UPDATE: (id) => `/ItemUnit/${id}`,
+  DELETE: (id) => `/ItemUnit/${id}`,
+};
+
+export const LEVEL4_ENDPOINTS = {
+  GET_ALL: '/Level4',
+  GET_BY_ID: (id) => `/Level4/${id}`,
+  DROPDOWN: '/Level4/dropdown',
+  ACCOUNTS_BY_TYPE: (accountType) => `/Level4/accounts/${accountType}`,
+  CREATE: '/Level4',
+  UPDATE: (id) => `/Level4/${id}`,
+  DELETE: (id) => `/Level4/${id}`,
 };

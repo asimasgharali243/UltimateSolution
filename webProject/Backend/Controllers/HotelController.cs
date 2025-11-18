@@ -28,6 +28,8 @@ namespace Backend.Controllers
             {
                 var hotels = await _context.Hotels
                     .Include(h => h.City)
+                    .Include(h => h.CreatedByUser)
+                    .Include(h => h.ModifiedByUser)
                     .OrderBy(h => h.hotelName)
                     .Select(h => new HotelDto
                     {
@@ -37,8 +39,10 @@ namespace Backend.Controllers
                         cityID = h.cityID,
                         CityName = h.City != null ? h.City.cityName : "Unknown",
                         CreatedBy = h.CreatedBy,
+                        CreatedByName = h.CreatedByUser != null ? h.CreatedByUser.UserFullName : "Unknown",
                         CreatedDT = h.CreatedDT,
                         ModifyBy = h.ModifyBy,
+                        ModifiedByName = h.ModifiedByUser != null ? h.ModifiedByUser.UserFullName : "Not Modified",
                         ModifyDT = h.ModifyDT
                     })
                     .ToListAsync();
@@ -57,6 +61,8 @@ namespace Backend.Controllers
             {
                 var hotel = await _context.Hotels
                     .Include(h => h.City)
+                    .Include(h => h.CreatedByUser)
+                    .Include(h => h.ModifiedByUser)
                     .Where(h => h.hotelID == id)
                     .Select(h => new HotelDto
                     {
@@ -66,8 +72,10 @@ namespace Backend.Controllers
                         cityID = h.cityID,
                         CityName = h.City != null ? h.City.cityName : "Unknown",
                         CreatedBy = h.CreatedBy,
+                        CreatedByName = h.CreatedByUser != null ? h.CreatedByUser.UserFullName : "Unknown",
                         CreatedDT = h.CreatedDT,
                         ModifyBy = h.ModifyBy,
+                        ModifiedByName = h.ModifiedByUser != null ? h.ModifiedByUser.UserFullName : "Not Modified",
                         ModifyDT = h.ModifyDT
                     })
                     .FirstOrDefaultAsync();
@@ -100,6 +108,8 @@ namespace Backend.Controllers
                 var hotels = await _context.Hotels
                     .Where(h => h.cityID == cityId)
                     .Include(h => h.City)
+                    .Include(h => h.CreatedByUser)
+                    .Include(h => h.ModifiedByUser)
                     .OrderBy(h => h.hotelName)
                     .Select(h => new HotelDto
                     {
@@ -109,8 +119,10 @@ namespace Backend.Controllers
                         cityID = h.cityID,
                         CityName = h.City != null ? h.City.cityName : "Unknown",
                         CreatedBy = h.CreatedBy,
+                        CreatedByName = h.CreatedByUser != null ? h.CreatedByUser.UserFullName : "Unknown",
                         CreatedDT = h.CreatedDT,
                         ModifyBy = h.ModifyBy,
+                        ModifiedByName = h.ModifiedByUser != null ? h.ModifiedByUser.UserFullName : "Not Modified",
                         ModifyDT = h.ModifyDT
                     })
                     .ToListAsync();
@@ -149,9 +161,11 @@ namespace Backend.Controllers
                 _context.Hotels.Add(hotel);
                 await _context.SaveChangesAsync();
 
-                // Reload with city data to get CityName
+                // Reload with related data
                 var createdHotel = await _context.Hotels
                     .Include(h => h.City)
+                    .Include(h => h.CreatedByUser)
+                    .Include(h => h.ModifiedByUser)
                     .Where(h => h.hotelID == hotel.hotelID)
                     .Select(h => new HotelDto
                     {
@@ -161,8 +175,10 @@ namespace Backend.Controllers
                         cityID = h.cityID,
                         CityName = h.City != null ? h.City.cityName : "Unknown",
                         CreatedBy = h.CreatedBy,
+                        CreatedByName = h.CreatedByUser != null ? h.CreatedByUser.UserFullName : "Unknown",
                         CreatedDT = h.CreatedDT,
                         ModifyBy = h.ModifyBy,
+                        ModifiedByName = h.ModifiedByUser != null ? h.ModifiedByUser.UserFullName : "Not Modified",
                         ModifyDT = h.ModifyDT
                     })
                     .FirstOrDefaultAsync();

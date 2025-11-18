@@ -66,6 +66,13 @@ const PaxManagement = () => {
   const [updatePax, { isLoading: updating }] = useUpdatePaxMutation();
   const [deletePax, { isLoading: deleting }] = useDeletePaxMutation();
 
+  // Debug logging
+  useEffect(() => {
+    if (!isLoading && paxList) {
+      console.log('Pax Data:', paxList);
+    }
+  }, [paxList, isLoading]);
+
   // Lazy validation queries for better control
   const [checkName, { isLoading: nameChecking }] = useLazyCheckPaxNameExistsQuery();
   const [checkEditName, { isLoading: editNameChecking }] = useLazyCheckPaxNameExistsQuery();
@@ -171,8 +178,10 @@ const PaxManagement = () => {
       paxID: pax.paxID,
       paxTitle: pax.paxTitle || '',
       CreatedBy: pax.createdBy || pax.CreatedBy,
+      CreatedByName: pax.createdByName || pax.CreatedByName,
       CreatedDT: pax.createdDT || pax.CreatedDT,
       ModifyBy: pax.modifyBy || pax.ModifyBy,
+      ModifiedByName: pax.modifiedByName || pax.ModifiedByName,
       ModifyDT: pax.modifyDT || pax.ModifyDT
     });
     setEditDialogOpen(true);
@@ -245,6 +254,22 @@ const PaxManagement = () => {
     }
   };
 
+  // Format date with time
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '-';
+    try {
+      return new Date(dateString).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return '-';
+    }
+  };
+
   // Get chip color based on pax title
   const getPaxColor = (paxTitle) => {
     if (!paxTitle) return 'default';
@@ -271,18 +296,28 @@ const PaxManagement = () => {
     return '👤';
   };
 
-  // Display user name
-  const getUserDisplayName = (userId) => {
-    if (!userId) return '-';
-
-    // Get current user ID from auth state
-    const currentUserId = user?.userID || user?.userId;
-
-    if (currentUserId && currentUserId === userId) {
-      return 'You';
+  // Display user name with tooltip (without avatar)
+  const renderUserName = (userName, userId, isModified = false) => {
+    if (!userName || userName === 'Unknown' || (isModified && !userName)) {
+      return (
+        <Typography variant="body2" color="text.secondary">
+          {isModified ? 'Not Modified' : 'Unknown'}
+        </Typography>
+      );
     }
 
-    return `User ${userId}`;
+    return (
+      <Tooltip title={`User ID: ${userId}`} arrow>
+        <Box>
+          <Typography variant="body2" fontWeight="medium">
+            {userName}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            ID: {userId}
+          </Typography>
+        </Box>
+      </Tooltip>
+    );
   };
 
   // Table cell styles
@@ -440,19 +475,19 @@ const PaxManagement = () => {
                   }
                 }}
               >
-                <Table size="small" sx={{ minWidth: 800 }}>
+                <Table size="small" sx={{ minWidth: 1000 }}>
                   <TableHead sx={{ backgroundColor: theme.palette.primary.main }}>
                     <TableRow>
                       {[
                         { header: 'Pax ID', width: '100px' },
-                        { header: 'Pax Title', width: '200px' },
+                        { header: 'Pax Title', width: '150px' },
                         { header: 'Icon', width: '80px' },
-                        { header: 'Display', width: '150px' },
-                        { header: 'Created By', width: '120px' },
+                        { header: 'Display', width: '120px' },
+                        { header: 'Created By', width: '150px' },
                         { header: 'Created Date', width: '150px' },
-                        { header: 'Modified By', width: '120px' },
+                        { header: 'Modified By', width: '150px' },
                         { header: 'Modified Date', width: '150px' },
-                        { header: 'Status', width: '120px' },
+                        { header: 'Status', width: '100px' },
                         { header: 'Actions', width: '120px' }
                       ].map((item, index) => (
                         <TableCell
@@ -504,17 +539,17 @@ const PaxManagement = () => {
                             sx={{ fontWeight: 'bold', minWidth: '100px' }}
                           />
                         </TableCell>
+                        <TableCell sx={tableCellStyles}>{renderUserName(pax.createdByName, pax.createdBy)}</TableCell>
                         <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{getUserDisplayName(pax.createdBy)}</Typography>
+                          <Tooltip title={formatDateTime(pax.createdDT)} arrow>
+                            <Typography variant="body2">{formatDate(pax.createdDT)}</Typography>
+                          </Tooltip>
                         </TableCell>
+                        <TableCell sx={tableCellStyles}>{renderUserName(pax.modifiedByName, pax.modifyBy, true)}</TableCell>
                         <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{formatDate(pax.createdDT)}</Typography>
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{pax.modifyBy ? getUserDisplayName(pax.modifyBy) : '-'}</Typography>
-                        </TableCell>
-                        <TableCell sx={tableCellStyles}>
-                          <Typography variant="body2">{formatDate(pax.modifyDT)}</Typography>
+                          <Tooltip title={pax.modifyDT ? formatDateTime(pax.modifyDT) : 'Never modified'} arrow>
+                            <Typography variant="body2">{pax.modifyDT ? formatDate(pax.modifyDT) : '-'}</Typography>
+                          </Tooltip>
                         </TableCell>
                         <TableCell sx={tableCellStyles}>
                           <Chip
@@ -638,15 +673,27 @@ const PaxManagement = () => {
                   </Typography>
                   <Grid container spacing={1}>
                     <Grid item xs={6}>
-                      <Typography variant="caption">Created:</Typography>
+                      <Typography variant="caption">Created By:</Typography>
                       <Typography variant="body2" fontWeight="medium">
-                        {formatDate(editingPax.createdDT)} by {getUserDisplayName(editingPax.createdBy)}
+                        {editingPax.createdByName || 'Unknown'}
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="caption">Last Modified:</Typography>
+                      <Typography variant="caption">Created Date:</Typography>
                       <Typography variant="body2" fontWeight="medium">
-                        {editingPax.modifyDT ? `${formatDate(editingPax.modifyDT)} by ${getUserDisplayName(editingPax.modifyBy)}` : 'Never'}
+                        {formatDateTime(editingPax.createdDT)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption">Last Modified By:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {editingPax.modifiedByName || 'Never'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption">Last Modified Date:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {editingPax.modifyDT ? formatDateTime(editingPax.modifyDT) : 'Never'}
                       </Typography>
                     </Grid>
                     <Grid item xs={12}>

@@ -25,15 +25,47 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Package>>> GetPackages()
+        public async Task<ActionResult<IEnumerable<object>>> GetPackages()
         {
-            return await _context.Packages.ToListAsync();
+            var packages = await _context.Packages
+                .Include(p => p.CreatedByUser)
+                .Include(p => p.ModifiedByUser)
+                .OrderBy(p => p.PackgeTitle)
+                .Select(p => new
+                {
+                    p.packgeID,
+                    p.PackgeTitle,
+                    p.CreatedBy,
+                    CreatedByName = p.CreatedByUser != null ? p.CreatedByUser.UserFullName : "Unknown",
+                    p.CreatedDT,
+                    p.ModifyBy,
+                    ModifiedByName = p.ModifiedByUser != null ? p.ModifiedByUser.UserFullName : "Not Modified",
+                    p.ModifyDT
+                })
+                .ToListAsync();
+
+            return Ok(packages);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Package>> GetPackage(int id)
+        public async Task<ActionResult<object>> GetPackage(int id)
         {
-            var package = await _context.Packages.FindAsync(id);
+            var package = await _context.Packages
+                .Include(p => p.CreatedByUser)
+                .Include(p => p.ModifiedByUser)
+                .Where(p => p.packgeID == id)
+                .Select(p => new
+                {
+                    p.packgeID,
+                    p.PackgeTitle,
+                    p.CreatedBy,
+                    CreatedByName = p.CreatedByUser != null ? p.CreatedByUser.UserFullName : "Unknown",
+                    p.CreatedDT,
+                    p.ModifyBy,
+                    ModifiedByName = p.ModifiedByUser != null ? p.ModifiedByUser.UserFullName : "Not Modified",
+                    p.ModifyDT
+                })
+                .FirstOrDefaultAsync();
 
             if (package == null)
             {
@@ -86,7 +118,7 @@ namespace Backend.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Package>> PostPackage(Package package)
+        public async Task<ActionResult<object>> PostPackage(Package package)
         {
             // Check if package title already exists
             var existingPackage = await _context.Packages
@@ -107,17 +139,30 @@ namespace Backend.Controllers
             _context.Packages.Add(package);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetPackage", new { id = package.packgeID }, package);
+            // Reload with user information
+            var createdPackage = await _context.Packages
+                .Include(p => p.CreatedByUser)
+                .Include(p => p.ModifiedByUser)
+                .Where(p => p.packgeID == package.packgeID)
+                .Select(p => new
+                {
+                    p.packgeID,
+                    p.PackgeTitle,
+                    p.CreatedBy,
+                    CreatedByName = p.CreatedByUser != null ? p.CreatedByUser.UserFullName : "Unknown",
+                    p.CreatedDT,
+                    p.ModifyBy,
+                    ModifiedByName = p.ModifiedByUser != null ? p.ModifiedByUser.UserFullName : "Not Modified",
+                    p.ModifyDT
+                })
+                .FirstOrDefaultAsync();
+
+            return CreatedAtAction("GetPackage", new { id = package.packgeID }, createdPackage);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> PutPackage(int id, Package updatedPackage)
         {
-            // if (id != updatedPackage.packgeID)
-            // {
-            //     return BadRequest("ID mismatch");
-            // }
-
             // Check if the record exists
             var existingPackage = await _context.Packages.FindAsync(id);
             if (existingPackage == null)
