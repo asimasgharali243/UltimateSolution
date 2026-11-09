@@ -30,3 +30,10 @@ p,h2,li{overflow-wrap:anywhere}
 #notice{color:#ffd599;min-height:1em;margin:14px 0}
 :focus-visible{outline:2px solid #a9c9ff;outline-offset:3px}
 @media(max-width:740px){.layout{grid-template-columns:1fr}.mode{display:none}}
+
+.detail h2{margin-top:9px}
+.detail details{margin:8px 0;border:1px solid var(--border);border-radius:8px;padding:8px 12px}
+.detail summary{cursor:pointer;font-weight:650}
+.detail details pre{max-height:300px;overflow:auto}
+.detail .buttons{margin-top:18px}
+.detail .secondary{margin-top:5px}

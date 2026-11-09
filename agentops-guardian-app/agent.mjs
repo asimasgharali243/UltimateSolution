@@ -11,7 +11,7 @@ async function call(path, write = false) {
       method: write ? 'POST' : 'GET',
       headers: write ? { 'Content-Type': 'application/json' } : undefined,
       body: write ? '{}' : undefined,
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(26000)
     });
     const result = await response.json();
     return { isError: !response.ok, content: [{ type: 'text', text: JSON.stringify(result) }] };
@@ -26,8 +26,8 @@ server.registerTool('list_incidents', {
 }, () => call('incidents'));
 
 server.registerTool('advance_investigation', {
-  description: 'Investigate a captured incident or verify its plan. Human review remains in the dashboard.',
-  inputSchema: { id: z.uuid(), action: z.enum(['investigate', 'verify']) },
+  description: 'Investigate an incident, verify its plan, or run the bundled checkout repair regression tests. Human review remains in the dashboard.',
+  inputSchema: { id: z.uuid(), action: z.enum(['investigate', 'verify', 'run-repair', 'triage']) },
   annotations: { destructiveHint: false, openWorldHint: false }
 }, ({ id, action }) => call('agent/incidents/' + id + '/' + action, true));
 

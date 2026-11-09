@@ -1,24 +1,35 @@
 # AgentOps Guardian AI
 
-A local incident response console with a persistent queue, evidence-based diagnosis, remediation plans, and human review.
+Guardian connects incident evidence, a proposed code change, reproducible regression results, and a human decision in one local workspace.
 
-## Run
+## Run on Windows, macOS, or Linux
 
-Requires Node.js 22.22 or newer. From this directory run:
+Use Node.js 22.22 or newer. From this directory:
 
 ```powershell
 npm ci
-npm test
 npm run build
+npm test
 npm start
 ```
 
-Open http://127.0.0.1:3000/guardian. Load the sample, create an incident, investigate, verify the plan, and record a review decision. Data is stored in the ignored .guardian directory. Set PORT to use a different local port.
+Open http://localhost:3000/guardian. Select **Load checkout demo**, **Create incident**, and **Run triage agent**. Inspect the diff and baseline/candidate transcripts before recording a decision. Set `PORT` to use another local port. No API key or paid service is needed.
 
-## Agent access
+See [DEMO.md](DEMO.md) for the competition recording sequence.
 
-An MCP client can launch `node <absolute path to agent.mjs>` over stdio while the dashboard is running. Pass the same PORT to both processes if using a custom port. The agent can list incidents, investigate, and verify through the same workflow as the dashboard. Approval and rejection are available in the operator surface.
+## Agent-Native and MCP
 
-## Scope
+The dashboard and MCP transport invoke the same Builder Agent-Native action defined in `actions.mjs`, with the same schema and state transition implementation. The [vendored MIT action runtime](vendor/agent-native/README.md) is pinned to the verified upstream package. An MCP client can launch `node <absolute path to agent.mjs>` over stdio while the server runs. Pass the same `PORT` to the MCP process if you use a custom port. The agent can inspect the queue, triage, investigate, and verify. The agent transport cannot approve or reject proposals.
 
-This local demo uses deterministic runbooks for timeout, rate limit, and dependency failures. Verification checks the evidence and plan against the runbook. The proposed regression tests are instructions for the affected service. Guardian does not execute those tests, edit repositories, or deploy changes. Use synthetic or manually redacted logs. Automatic redaction covers common patterns and is not a substitute for reviewing the input. The loopback server assumes a trusted local machine and does not provide multi-user authentication.
+## Optional local AI
+
+With a locally installed Ollama model already running, set `GUARDIAN_OLLAMA_MODEL` to its local model tag before starting Guardian. **Run triage agent** then requests an advisory summary and one diagnostic suggestion from Ollama on loopback. Use manually reviewed log excerpts. Model output is advisory and cannot control patch selection, regression results, or approval. Without a model, Guardian uses the runbook end to end.
+
+## Verification and operating boundary
+
+- The checkout repair targets the bundled fixture. Each run copies the same regression suite into a fresh temporary directory, runs it against the baseline and candidate, and removes the directory afterward.
+- Each subprocess uses a stripped environment, filesystem read permissions limited to the fixture, a four-second timeout, and bounded output. Only bundled code runs. Treat the Node permission model as defense in depth for trusted fixtures.
+- The gate requires the baseline to reproduce the named timeout regression and the candidate to pass all four checks. The dashboard shows the diff, result transcripts, and SHA-256 of the tested candidate.
+- Other input uses deterministic runbooks for triage. Their verification checks evidence and plan consistency. The generated checklist describes tests to run in the affected service.
+- SQLite persists incidents and the review timeline in the ignored `.guardian` directory. Back up the database before clearing local state. Use synthetic or manually redacted log excerpts.
+- Guardian is a single-operator loopback application. Arbitrary repository patch execution, multi-user identity and authorization, and deployment are outside the local trust boundary. Approval records a decision and does not apply the patch.

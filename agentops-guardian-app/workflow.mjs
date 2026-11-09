@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import { checkoutRepair, verifyCheckoutRepair } from './repair.mjs';
+import { requestAdvisory } from './advisory.mjs';
 
 export const intake = z.object({
   service: z.string().trim().min(1).max(80),
-  logs: z.string().trim().min(1).max(12000)
+  logs: z.string().trim().min(1).max(12000),
+  demo: z.boolean().optional()
 }).strict();
-export const operation = z.enum(['investigate', 'verify', 'approve', 'reject']);
+export const operation = z.enum(['investigate', 'verify', 'run-repair', 'approve', 'reject']);
 const rules = [
   {
     id: 'upstream-timeout', pattern: /ETIMEDOUT|upstream.{0,40}timeout|gateway timeout/i,
@@ -34,12 +37,12 @@ function record(incident, status, actor, detail) {
 }
 
 export function createIncident(input) {
-  const { service, logs } = intake.parse(input);
+  const { service, logs, demo } = intake.parse(input);
   const safeLogs = logs
     .replace(/\b(?:Bearer|Basic)\s+[^\s,;]+/gi, '[REDACTED AUTHORIZATION]')
     .replace(/\b(token|password|secret|api[_-]?key)\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,;]+)/gi, '$1=[REDACTED]')
     .replace(/([a-z][a-z0-9+.-]*:\/\/)[^\s/@]+@/gi, '$1[REDACTED]@');
-  return record({ id: randomUUID(), service, logs: safeLogs, timeline: [] },
+  return record({ id: randomUUID(), service, logs: safeLogs, demo: demo === true, timeline: [] },
     'Open', 'Operator', 'Incident captured');
 }
 
@@ -59,10 +62,11 @@ export function advance(incident, action, actor = 'Operator') {
     const { rule, evidence } = matches[0];
     return record({ ...incident, diagnosis: {
       id: rule.id, title: rule.title, severity: rule.severity,
+      repair: incident.demo && rule.id === 'upstream-timeout' ? checkoutRepair : undefined,
       evidence: [evidence], proposal: rule.proposal, checks: rule.checks
     } }, 'Proposed', actor, 'Rule matched and a remediation plan was drafted');
   }
-  if (action === 'verify' && incident.status === 'Proposed') {
+  if (action === 'verify' && incident.status === 'Proposed' && !incident.diagnosis.repair) {
     const { diagnosis } = incident;
     const rule = rules.find(candidate => candidate.id === diagnosis.id);
     const checks = [
@@ -80,4 +84,25 @@ export function advance(incident, action, actor = 'Operator') {
       'Recorded human decision on the plan');
   }
   throw Object.assign(new Error('This action is unavailable in the current incident state.'), { status: 409 });
+}
+
+export async function transitionIncident(incident, action, actor) {
+  if (action === 'triage') {
+    const proposed = advance(incident, 'investigate', 'Agent');
+    const advisory = await requestAdvisory(proposed.diagnosis);
+    const triaged = advisory ? { ...proposed, advisory } : proposed;
+    return triaged.diagnosis.repair
+      ? transitionIncident(triaged, 'run-repair', 'Agent')
+      : triaged;
+  }
+  if (action !== 'run-repair') return advance(incident, action, actor);
+  if (incident.status !== 'Proposed' || !incident.demo ||
+      incident.diagnosis?.id !== 'upstream-timeout' ||
+      incident.diagnosis.repair?.candidateHash !== checkoutRepair.candidateHash) {
+    throw Object.assign(new Error('A matching checkout repair proposal is required.'), { status: 409 });
+  }
+  const execution = await verifyCheckoutRepair();
+  return record({ ...incident, execution }, execution.passed ? 'Review' : 'Verification failed',
+    actor, execution.passed ? 'Baseline reproduced the failure and the candidate passed all four tests' :
+      'Repair verification did not meet the evidence gate');
 }

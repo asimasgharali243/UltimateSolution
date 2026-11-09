@@ -4,7 +4,8 @@ import { mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ZodError } from 'zod';
-import { advance, createIncident } from './workflow.mjs';
+import { transitionIncident, createIncident } from './workflow.mjs';
+import { actionInput, incidentAction } from './actions.mjs';
 
 export function createApp(database = ':memory:') {
   const db = new DatabaseSync(database);
@@ -36,13 +37,17 @@ export function createApp(database = ':memory:') {
     db.prepare('INSERT INTO incidents VALUES (?, ?)').run(incident.id, JSON.stringify(incident));
     res.status(201).json(incident);
   });
-  app.post(['/api/incidents/:id/:action', '/api/agent/incidents/:id/:action'], (req, res) => {
+  app.post(['/api/incidents/:id/:action', '/api/agent/incidents/:id/:action'], async (req, res) => {
     if (!req.is('application/json')) return res.status(415).json({ error: 'JSON required.' });
     const { id, action } = req.params;
     const row = db.prepare('SELECT body FROM incidents WHERE id = ?').get(id);
     if (!row) return res.status(404).json({ error: 'Incident not found.' });
     const actor = req.path.startsWith('/api/agent/') ? 'Agent' : 'Operator';
-    const incident = advance(JSON.parse(row.body), action, actor);
+    const transition = (_id, verb) => transitionIncident(JSON.parse(row.body), verb, actor);
+    const isDecision = action === 'approve' || action === 'reject';
+    const incident = isDecision
+      ? await transition(id, action)
+      : await incidentAction(transition).run(actionInput.parse({ id, action }));
     const result = db.prepare('UPDATE incidents SET body = ? WHERE id = ? AND body = ?')
       .run(JSON.stringify(incident), id, row.body);
     if (!result.changes) return res.status(409).json({ error: 'Incident changed. Refresh and retry.' });
@@ -54,7 +59,7 @@ export function createApp(database = ':memory:') {
   app.use((err, _req, res, _next) => {
     const status = err instanceof ZodError ? 400 : err.status ?? 500;
     res.status(status).json({ error: status >= 500 ? 'Internal server error.' :
-      err instanceof ZodError ? 'Invalid incident or action. Check required fields and length.' : err.message });
+      status === 400 ? 'Invalid request. Check required fields, lengths, and JSON syntax.' : err.message });
   });
   return { app, close: () => db.close() };
 }

@@ -5,6 +5,7 @@ const notice = document.querySelector('#notice');
 let incidents = [];
 let selected;
 let busy = false;
+let demo = false;
 
 function element(tag, text, className) {
   const node = document.createElement(tag);
@@ -68,10 +69,43 @@ function render() {
     detail.append(list(item.verification.map(check => (check.passed ? 'PASS · ' : 'FAIL · ') + check.label),
       'Runbook verification'));
   }
+  if (item.advisory?.status === 'ready') {
+    detail.append(element('h3', 'Optional model advisory · ' + item.advisory.model),
+      element('p', item.advisory.summary), element('p', 'Suggested check · ' + item.advisory.nextCheck, 'muted'));
+  } else if (item.advisory?.status === 'unavailable') {
+    detail.append(element('p', 'Local model unavailable. Triage used the runbook.', 'muted'));
+  }
+  if (item.diagnosis?.repair) {
+    detail.append(element('h3', 'Proposed patch · bundled checkout fixture'),
+      element('pre', item.diagnosis.repair.patch));
+  }
+  if (item.execution) {
+    const { baseline, patched, repair, passed } = item.execution;
+    const exportButton = element('button', 'Download evidence report', 'secondary');
+    exportButton.onclick = () => {
+      const report = { id: item.id, service: item.service, status: item.status,
+        diagnosis: item.diagnosis, execution: item.execution, timeline: item.timeline };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }));
+      const link = element('a');
+      link.href = url;
+      link.download = 'guardian-' + item.id + '.json';
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+    detail.append(element('h3', passed ? 'Regression gate passed' : 'Regression gate failed'),
+      element('p', 'Candidate SHA-256 · ' + repair.candidateHash, 'muted'));
+    for (const [label, result] of [['Baseline', baseline], ['Candidate', patched]]) {
+      const transcript = element('details');
+      transcript.append(element('summary', label + ' · exit ' + (result.exitCode ?? 'unavailable')),
+        element('pre', result.output || 'No test report was produced.'));
+      detail.append(transcript);
+    }
+    detail.append(exportButton);
+  }
   const actions = {
-    Open: [['investigate', 'Investigate']],
-    Proposed: [['verify', 'Verify plan']],
-    Review: [['approve', 'Approve plan'], ['reject', 'Reject plan']]
+    Open: [['investigate', 'Investigate'], ['triage', 'Run triage agent']],
+    Proposed: item.diagnosis?.repair ? [['run-repair', 'Run regression tests']] : [['verify', 'Verify plan']],
+    Review: [['approve', 'Approve proposal'], ['reject', 'Reject proposal']]
   };
   const buttons = element('div', '', 'buttons');
   for (const [action, label] of actions[item.status] ?? []) {
@@ -91,7 +125,9 @@ function list(items, title) {
   return section;
 }
 
+form.addEventListener('input', () => { demo = false; });
 document.querySelector('#sample').onclick = () => {
+  demo = true;
   form.elements.service.value = 'checkout-api';
   form.elements.logs.value = 'ERROR checkout-api request_id=demo-137 upstream payments ETIMEDOUT after 3000ms';
   form.elements.service.focus();
@@ -99,9 +135,10 @@ document.querySelector('#sample').onclick = () => {
 form.onsubmit = event => {
   event.preventDefault();
   run(async () => {
-    const incident = await request('incidents', Object.fromEntries(new FormData(form)));
+    const incident = await request('incidents', { ...Object.fromEntries(new FormData(form)), demo });
     selected = incident.id;
     form.reset();
+    demo = false;
   });
 };
 await run(async () => {});
