@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AgentOps Guardian AI</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header><span class="logo">G</span><strong>AgentOps Guardian AI</strong><span class="mode">LOCAL WORKSPACE</span></header>
+  <main>
+    <section class="intro"><p class="eyebrow">INCIDENT RESPONSE</p><h1>Incident command center</h1><p>Investigate service failures, verify the evidence, and review a proposed response.</p></section>
+    <p id="notice" role="status"></p>
+    <div class="layout">
+      <aside>
+        <section class="panel">
+          <h2>New incident</h2>
+          <form id="intake">
+            <label>Service<input name="service" maxlength="80" required placeholder="checkout-api"></label>
+            <label>Log excerpt<textarea name="logs" maxlength="12000" rows="5" required placeholder="Paste a redacted log excerpt"></textarea></label>
+            <div class="buttons"><button>Create incident</button><button type="button" id="sample" class="secondary">Load sample</button></div>
+          </form>
+        </section>
+        <section class="panel"><h2>Incident queue</h2><div id="queue"></div></section>
+      </aside>
+      <section class="panel detail" id="detail" aria-label="Incident details"></section>
+    </div>
+  </main>
+</body>
+</html>

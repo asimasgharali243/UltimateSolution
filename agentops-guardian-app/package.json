@@ -1,0 +1,20 @@
+{
+  "name": "agentops-guardian-ai",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs",
+    "test": "node --test",
+    "build": "node --check server.mjs && node --check workflow.mjs && node --check agent.mjs && node --check public/app.js",
+    "agent": "node agent.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "express": "5.2.1",
+    "zod": "^4.0.0"
+  }
+}
