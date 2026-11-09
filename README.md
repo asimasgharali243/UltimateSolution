@@ -1,4 +1,10 @@
-# UltimateSolution — Multi-application Workspace
+# Multi-Application Business Platform | React Native & .NET
+
+Multi-project solution combining a React Native consumer app, .NET web API, CRM, scale application and additional web modules. Each module is documented independently.
+
+**Explore this repository:** [Architecture](docs/ARCHITECTURE.md) · [Developer runbook](docs/RUNBOOK.md) · [Screenshot evidence guide](docs/SCREENSHOT_GUIDE.md) · [Audit](docs/PORTFOLIO_AUDIT.md)
+
+**Discoverability topics:** `react-native` · `dotnet` · `crm` · `mobile-app` · `business-software` · `api`. These are suggested GitHub repository topics, not a claim that the repository settings have been updated.
 
 > **Status:** Source-reviewed documentation draft. Runtime startup, end-to-end tests and screenshots have **not** been independently verified. Review PR before merging.
 
